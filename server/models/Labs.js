@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const userSchema = mongoose.Schema({
+const labSchema = mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   number: {
@@ -11,21 +11,16 @@ const userSchema = mongoose.Schema({
     max: 9999999999,
   },
   image: { type: String },
-  public_id: { type: String },
-  age: {
-    type: Number,
-    min: 0,
-    max: 100,
-    required: true,
-  },
-  gender: {
-    type: String,
-    required: true,
-    enum: ["Male", "Female", "Others"],
-  },
   password: { type: String, required: true },
+  address: {type: String, required: true},
+  isApproved: {
+    type: Boolean,
+    default: false,
+    enum: [true, false],
+    required: true
+  },
 });
 
-const user = mongoose.model("user", userSchema);
+const lab = mongoose.model("lab", labSchema);
 
-export default user;
+export default lab;

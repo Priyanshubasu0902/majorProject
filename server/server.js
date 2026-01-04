@@ -2,6 +2,9 @@ import express from 'express'
 import "dotenv/config"
 import connectDB from './config/db.js';
 import userRoutes from './routes/userRoutes.js'
+import pharmacyRoutes from './routes/pharmacyRoutes.js'
+import labRoutes from './routes/labRoutes.js'
+import doctorRoutes from './routes/doctorRoutes.js'
 
 const app = express();
 const PORT = process.env.PORT || 5000
@@ -16,6 +19,9 @@ app.get('/', (req, res)=> {
 })
 
 app.use('/api/users', userRoutes);
+app.use('/api/pharmacy', pharmacyRoutes);
+app.use('/api/lab', labRoutes);
+app.use('/api/doctor', doctorRoutes);
 
 app.listen(PORT, (err) => {
    if(err) return console.log(err.message);

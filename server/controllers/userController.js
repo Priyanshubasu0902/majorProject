@@ -128,7 +128,7 @@ export const getUser = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-
+  
 };
 
 export const editUser = async (req, res) => {
