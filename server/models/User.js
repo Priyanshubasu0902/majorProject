@@ -24,6 +24,15 @@ const userSchema = mongoose.Schema({
     enum: ["Male", "Female", "Others"],
   },
   password: { type: String, required: true },
+   // address: {
+  //   line1: {type: String},
+  //   line2: {type: String},
+  //   landmark: {type: String},
+  //   state: {type: String, required: true},
+  //   city: {type: String, required: true},
+  //   pincode: {type: Number, required: true},
+  // },
+  address: {type: String, required: true},
 });
 
 const user = mongoose.model("user", userSchema);

@@ -110,7 +110,7 @@ export default function PartnerAuth() {
                     }
                   />
 
-                  <select
+                  <select 
                     className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
                     value={formData.businessType}
                     onChange={(e) =>

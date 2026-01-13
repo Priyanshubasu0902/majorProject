@@ -12,12 +12,48 @@ const labSchema = mongoose.Schema({
   },
   image: { type: String },
   password: { type: String, required: true },
+  // address: {
+  //   line1: {type: String},
+  //   line2: {type: String},
+  //   landmark: {type: String},
+  //   state: {type: String, required: true},
+  //   city: {type: String, required: true},
+  //   pincode: {type: Number, required: true},
+  // },
   address: {type: String, required: true},
   isApproved: {
     type: Boolean,
     default: false,
     enum: [true, false],
     required: true
+  },
+  gstNumber: {
+    type: String,
+  },
+  licenseNumber: {
+    type: String,
+  },
+  licenseFile: {
+    type: String,
+  },
+  gstFile: {
+    type: String,
+  },
+  nablFile: {
+    type: String,
+  },
+  image: { type: String },
+  atHomeService: {
+    type: Boolean,
+    default: true,
+    enum: [true, false],
+    required: true,
+  },
+  VisitLab: {
+    type: Boolean,
+    default: true,
+    enum: [true, false],
+    required: true,
   },
 });
 

@@ -1,16 +1,28 @@
 import bcrypt from "bcrypt";
+import { v2 as cloudinary } from "cloudinary";
 import pharmacyModel from "../models/Pharmacies.js";
 import generateToken from "../utils/generateToken.js";
+import pharmacyProductModel from "../models/PharmacyProduct.js";
 
 export const signUpPharmacy = async (req, res) => {
-  const { name, email, number, password, address } = req.body;
+  const { name, email, number, password, address, gstNumber, licenseNumber } =
+    req.body;
+
+  const gst = req.files.gstFile[0];
+  const license = req.files.licenseFile[0];
+  const nabl = req.files.nablFile[0];
 
   if (
     name === "" ||
     email === "" ||
     number === "" ||
     password === "" ||
-    address === ""
+    address === "" ||
+    gstNumber === "" ||
+    licenseNumber === "" ||
+    !gst ||
+    !license ||
+    !nabl
   ) {
     return res.json({ success: false, message: "Missing Details" });
   }
@@ -26,6 +38,10 @@ export const signUpPharmacy = async (req, res) => {
       });
     }
 
+    const gstFileUpload = await cloudinary.uploader.upload(gst.path);
+    const licenseFileUpload = await cloudinary.uploader.upload(license.path);
+    const nablFileUpload = await cloudinary.uploader.upload(nabl.path);
+
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
@@ -35,6 +51,11 @@ export const signUpPharmacy = async (req, res) => {
       password: hashPassword,
       email,
       address,
+      licenseNumber,
+      gstNumber,
+      licenseFile: licenseFileUpload.secure_url,
+      gstFile: gstFileUpload.secure_url,
+      nablFile: nablFileUpload.secure_url,
     });
 
     res.json({
@@ -144,3 +165,107 @@ export const deletePharmacy = async (req, res) => {};
 export const editPharmacy = async (req, res) => {};
 
 export const setPassword = async (req, res) => {};
+
+export const addProduct = async (req, res) => {
+  try {
+    const {
+      name,
+      type,
+      productNo,
+      quantity,
+      no_of_Product,
+      price,
+      discount,
+      companyName,
+      visibility,
+      prescription_required,
+    } = req.body;
+
+    const image = req.file;
+    const user = req.pharmacy;
+
+    if (
+      name === "" ||
+      type === "" ||
+      companyName === "" ||
+      visibility === "" ||
+      prescription_required === ""||
+      price === ""||
+      discount === "" || 
+      productNo === "" ||
+      quantity === "" ||
+      no_of_Product === ""||
+      !image
+    ) {
+      return res.json({ success: false, message: "Missing Details" });
+    }
+
+    const fileUpload = await cloudinary.uploader.upload(image.path);
+
+    const product = await pharmacyProductModel.create({
+      name,
+      type,
+      pharmacyId: user._id,
+      productNo,
+      quantity,
+      no_of_Product,
+      price,
+      discount,
+      companyName,
+      visibility,
+      prescription_required,
+      image: fileUpload.secure_url
+    });
+
+     res.json({
+      success: true,
+      product,
+    });
+
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const updateProduct = async (req, res) => {
+
+};
+
+export const incrementQuantity = async (req, res) => {
+  try {
+    const user = req.pharmacy;
+  } catch (error) {
+    
+  }
+};
+
+export const decrementQuantity = async (req, res) => {
+
+};
+
+export const removeProduct = async (req, res) => {
+
+};
+
+export const changeVisibility = async (req, res) => {
+
+};
+
+export const viewOrders = async (req, res) => {
+
+}
+
+export const updateOrderStatus = async (req, res) => {
+
+}
+
+export const checkInventory = async(req, res) => {
+
+}
+
+export const placeOrder = async(req, res) => {
+  
+}
+
+
+
