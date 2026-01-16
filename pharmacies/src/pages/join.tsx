@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import {  usePharmacy } from "@/context/PharmacyContext";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -11,23 +12,23 @@ type Step = 1 | 2 | 3 | 4;
 type Mode = "login" | "signup";
 
 export default function PartnerAuth() {
+  const { setPharmacyToken, products } = usePharmacy();
+
   const [mode, setMode] = useState<Mode>("signup");
   const [step, setStep] = useState<Step>(1);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [orgName, setorgName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [address, setAddress] = useState('');
-  const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [orgName, setorgName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [otp, setOtp] = useState("");
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [gstFile, setGstFile] = useState<File | null>(null);
   const [nablFile, setNablFile] = useState<File | null>(null);
-
 
   const handleNext = () => {
     if (step < 4) setStep((prev) => (prev + 1) as Step);
@@ -38,11 +39,18 @@ export default function PartnerAuth() {
     setLoading(true);
     setError(null);
     try {
-      await axios.post(`${API}/partners/send-otp`, {
-        email: formData.email,
-        phone: formData.phone,
+      const { data } = await axios.post(`${API}/api/generate-otp`, {
+        email,
+        phone,
       });
-      handleNext(); // Move to OTP step
+      if (data.success) {
+        setLoading(false);
+        console.log(data.message);
+        handleNext(); // Move to OTP step
+      } else {
+        setLoading(false);
+        console.log(data.message);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to send OTP");
     } finally {
@@ -55,11 +63,18 @@ export default function PartnerAuth() {
     setLoading(true);
     setError(null);
     try {
-      await axios.post(`${API}/partners/verify-otp`, {
-        phone: formData.phone,
-        otp: formData.otp,
+      const { data } = await axios.post(`${API}/api/verify-otp`, {
+        email,
+        otp,
       });
-      handleNext(); // Move to document upload step
+      if (data.success) {
+        setLoading(false);
+        console.log(data.message);
+        handleNext(); // Move to document upload step
+      } else {
+        setLoading(false);
+        console.log(data.message);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid OTP. Try again.");
     } finally {
@@ -68,32 +83,102 @@ export default function PartnerAuth() {
   };
 
   // 📦 Handle Final Form Submission
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError(null);
+  const onSubmitHandler = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     try {
-      const data = new FormData();
+      setLoading(true);
 
-      // Append fields (excluding OTP)
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key !== "otp" && value) {
-          data.append(key, value as any);
-        }
-      });
+      const formDataToSend = new FormData();
 
-      await axios.post(`${API}/partners/register`, data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      formDataToSend.append("name", orgName);
+      formDataToSend.append("email", email);
+      formDataToSend.append("password", password);
+      formDataToSend.append("number", phone);
+      formDataToSend.append("address", address);
 
-      handleNext(); // move to pending step
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to register");
-    } finally {
+      if (licenseFile) {
+        formDataToSend.append("licenseFile", licenseFile);
+      }
+
+      if (gstFile) {
+        formDataToSend.append("gstFile", gstFile);
+      }
+
+      if (nablFile) {
+        formDataToSend.append("nablFile", nablFile);
+      }
+
+      const { data } = await axios.post(
+        `${API}/api/pharmacy/signUp`,
+        formDataToSend
+      );
+
+      if (data.success) {
+        localStorage.setItem("pharmacytoken", data.token);
+        setPharmacyToken(data.token);
+        console.log(data.message);
+        // toast.success("Application submitted");
+        setStep(4);
+      } else {
+        // toast.error(data.message);
+        console.log(data.message);
+      }
       setLoading(false);
+    } catch (error: any) {
+      setLoading(false);
+      console.log(error);
+      // toast.error(
+      //   error.response?.data?.message || "Registration failed"
+      // );
     }
   };
+
+  const onLoginHandler = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    setLoading(true);
+    setError(null);
+
+    const { data } = await axios.post(`${API}/api/pharmacy/login`, {
+      email,
+      password,
+      number: ''
+    });
+
+    if (data.success) {
+      localStorage.setItem("pharmacyToken", data.token);
+      localStorage.setItem("partnerRole", data.role);
+
+      // toast.success("Login successful");
+
+      // Role-based redirect
+      if (data.role === "pharmacy") {
+        navigate("/pharmacy/dashboard");
+      } else if (data.role === "lab") {
+        navigate("/lab/dashboard");
+      } else if (data.role === "doctor") {
+        navigate("/doctor/dashboard");
+      } else {
+        navigate("/");
+      }
+    } else {
+      // toast.error(data.message);
+      console.log(data.message);
+    }
+
+    setLoading(false);
+    // console.log(email);
+    // console.log(password);
+  } catch (error: any) {
+    setLoading(false);
+    console.log(error);
+    // toast.error(
+    //   error.response?.data?.message || "Login failed"
+    // );
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white px-6">
@@ -111,7 +196,9 @@ export default function PartnerAuth() {
           <div className="flex mb-6 bg-slate-100 rounded-full p-1">
             <button
               className={`w-1/2 py-2 rounded-full text-sm ${
-                mode === "signup" ? "bg-white shadow font-medium" : "text-slate-500"
+                mode === "signup"
+                  ? "bg-white shadow font-medium"
+                  : "text-slate-500"
               }`}
               onClick={() => {
                 setMode("signup");
@@ -122,7 +209,9 @@ export default function PartnerAuth() {
             </button>
             <button
               className={`w-1/2 py-2 rounded-full text-sm ${
-                mode === "login" ? "bg-white shadow font-medium" : "text-slate-500"
+                mode === "login"
+                  ? "bg-white shadow font-medium"
+                  : "text-slate-500"
               }`}
               onClick={() => setMode("login")}
             >
@@ -140,22 +229,18 @@ export default function PartnerAuth() {
             <div className="space-y-5">
               <Input
                 placeholder="Business Email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
               <Input
                 type="password"
                 placeholder="Password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
               <Button
-                className="w-full rounded-full py-6"
-                onClick={() => navigate("/dashboard")}
+                className="w-full rounded-full py-6 cursor-pointer"
+                onClick={onLoginHandler}
               >
                 Login
               </Button>
@@ -172,32 +257,29 @@ export default function PartnerAuth() {
                 <div className="space-y-4">
                   <Input
                     placeholder="Organization Name"
-                    value={formData.orgName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, orgName: e.target.value })
-                    }
+                    value={orgName}
+                    onChange={(e) => setorgName(e.target.value)}
                   />
                   <Input
                     placeholder="Business Email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                   <Input
                     type="password"
                     placeholder="Create Password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                   <Input
                     placeholder="Phone Number"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
                   />
                   <Button
                     className="w-full rounded-full py-6"
@@ -212,14 +294,12 @@ export default function PartnerAuth() {
               {step === 2 && (
                 <div className="space-y-5">
                   <p className="text-sm text-center text-slate-500">
-                    Enter OTP sent to <b>{formData.phone}</b>
+                    Enter OTP sent to <b>{email}</b>
                   </p>
                   <Input
                     placeholder="OTP"
-                    value={formData.otp}
-                    onChange={(e) =>
-                      setFormData({ ...formData, otp: e.target.value })
-                    }
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
                   />
                   <Button
                     className="w-full rounded-full py-6"
@@ -241,10 +321,7 @@ export default function PartnerAuth() {
                   <Input
                     type="file"
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        licenseFile: e.target.files?.[0] || null,
-                      })
+                      setLicenseFile(e.target.files?.[0] || null)
                     }
                   />
                   <p className="text-xs text-slate-400">License Certificate</p>
@@ -252,30 +329,20 @@ export default function PartnerAuth() {
                   {/* GST */}
                   <Input
                     type="file"
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        gstFile: e.target.files?.[0] || null,
-                      })
-                    }
+                    onChange={(e) => setGstFile(e.target.files?.[0] || null)}
                   />
                   <p className="text-xs text-slate-400">GST Certificate</p>
 
                   {/* NABL */}
                   <Input
                     type="file"
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        nablFile: e.target.files?.[0] || null,
-                      })
-                    }
+                    onChange={(e) => setNablFile(e.target.files?.[0] || null)}
                   />
                   <p className="text-xs text-slate-400">NABL Certificate</p>
 
                   <Button
                     className="w-full rounded-full py-6"
-                    onClick={handleSubmit}
+                    onClick={onSubmitHandler}
                     disabled={loading}
                   >
                     {loading ? "Submitting..." : "Submit for Approval"}
