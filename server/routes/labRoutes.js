@@ -1,6 +1,7 @@
 import express from "express";
 import { deleteLab, editLab, getLab, getLabByUser, loginLab, setPassword, signUpLab } from "../controllers/labController.js";
 import { isLoggedIn, isLabLoggedIn } from "../middlewares/isLoggedIn.js";
+import upload from "../config/multer.js";
 
 const router = express.Router();
 
@@ -8,7 +9,11 @@ const router = express.Router();
 router.post("/login",loginLab);
 
 // Sign up lab
-router.post("/signUp", signUpLab);
+router.post("/signUp", upload.fields([
+    { name: "gstFile", maxCount: 1 },
+    { name: "licenseFile", maxCount: 1 },
+    { name: "nablFile", maxCount: 1 }
+  ]), signUpLab);
 
 // Get lab data by owner
 router.get("/myLab", isLabLoggedIn , getLab);

@@ -12,13 +12,14 @@ interface PharmacyContextType {
   products: any[];
   pharmacyData: any;
   pharmacyToken: string | null;
+  setPharmacyToken: React.Dispatch<React.SetStateAction<string | null>>;
   role: string | null;
   loading: boolean;
   fetchProducts: () => Promise<void>;
   logout: () => void;
 }
 
-const PharmacyContext = createContext<PharmacyContextType | null>(null);
+export const PharmacyContext = createContext<PharmacyContextType | null>(null);
 
 interface Props {
   children: ReactNode;
@@ -94,33 +95,31 @@ export const PharmacyProvider = ({ children }: Props) => {
     if (!pharmacyToken || role !== "pharmacy") return;
 
     try {
-      const { data } = await axios.get(
-        `${backendURL}/api/pharmacy/products`,
-        {
-          headers: {
-            Authorization: `Bearer ${pharmacyToken}`,
-          },
-        }
-      );
+      const { data } = await axios.get(`${backendURL}/api/pharmacy/products`, {
+        headers: {
+          Authorization: `Bearer ${pharmacyToken}`,
+        },
+      });
       setProducts(data.products);
     } catch (error) {
       console.error(error);
     }
   };
 
+  const value = {
+    products,
+    pharmacyData,
+    pharmacyToken,
+    setPharmacyToken,
+    role,
+    loading,
+    fetchProducts,
+    logout,
+  };
+
   return (
-    <PharmacyContext.Provider
-      value={{
-        products,
-        pharmacyData,
-        pharmacyToken,
-        role,
-        loading,
-        fetchProducts,
-        logout,
-      }}
-    >
-      {!loading && children}
+    <PharmacyContext.Provider value={value}>
+      {children}
     </PharmacyContext.Provider>
   );
 };

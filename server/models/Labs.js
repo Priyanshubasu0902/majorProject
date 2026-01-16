@@ -43,16 +43,10 @@ const labSchema = mongoose.Schema({
     type: String,
   },
   image: { type: String },
-  atHomeService: {
-    type: Boolean,
-    default: true,
-    enum: [true, false],
-    required: true,
-  },
-  VisitLab: {
-    type: Boolean,
-    default: true,
-    enum: [true, false],
+  serviceType: {
+    type: String,
+    default: 'both',
+    enum: ['atHome', 'atLab', 'both'],
     required: true,
   },
 });
