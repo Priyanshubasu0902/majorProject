@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import pharmalog from "./lab/pharmalog";
+import pharmalog from "./lab/businessType";
 import { NavLink } from "react-router-dom";
 
 import {
@@ -173,13 +173,13 @@ export default function MedLuxHome() {
               <li>Lab Tests</li>
               <li>Order Medicines</li>
               <li>
-      <NavLink
-        to="/scanreport"
-        className="text-slate-300 hover:text-white transition"
-      >
-        Scan Reports
-      </NavLink>
-    </li>
+                <NavLink
+                  to="/scanreport"
+                  className="text-slate-300 hover:text-white transition"
+                >
+                  Scan Reports
+                </NavLink>
+              </li>
               <li>Doctor Consultation</li>
             </ul>
           </div>
