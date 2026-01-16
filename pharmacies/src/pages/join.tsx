@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+const API = import.meta.env.VITE_BACKEND_URL;
 
 type Step = 1 | 2 | 3 | 4;
 type Mode = "login" | "signup";
@@ -9,23 +13,86 @@ type Mode = "login" | "signup";
 export default function PartnerAuth() {
   const [mode, setMode] = useState<Mode>("signup");
   const [step, setStep] = useState<Step>(1);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    orgName: "",
-    businessType: "Diagnostic Lab",
-    phone: "",
-    otp: "",
-    gstNumber: "",
-    licenseNumber: "",
-    licenseFile: null as File | null,
-    gstFile: null as File | null,
-    nablFile: null as File | null,
-  });
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [orgName, setorgName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [address, setAddress] = useState('');
+  const [otp, setOtp] = useState('');
+  const [licenseFile, setLicenseFile] = useState<File | null>(null);
+  const [gstFile, setGstFile] = useState<File | null>(null);
+  const [nablFile, setNablFile] = useState<File | null>(null);
+
 
   const handleNext = () => {
     if (step < 4) setStep((prev) => (prev + 1) as Step);
+  };
+
+  //  Handle OTP Sending
+  const handleSendOtp = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await axios.post(`${API}/partners/send-otp`, {
+        email: formData.email,
+        phone: formData.phone,
+      });
+      handleNext(); // Move to OTP step
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Handle OTP Verification
+  const handleVerifyOtp = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await axios.post(`${API}/partners/verify-otp`, {
+        phone: formData.phone,
+        otp: formData.otp,
+      });
+      handleNext(); // Move to document upload step
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Invalid OTP. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 📦 Handle Final Form Submission
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = new FormData();
+
+      // Append fields (excluding OTP)
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== "otp" && value) {
+          data.append(key, value as any);
+        }
+      });
+
+      await axios.post(`${API}/partners/register`, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      handleNext(); // move to pending step
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to register");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,18 +104,14 @@ export default function PartnerAuth() {
             <h1 className="text-3xl font-semibold">
               Med<span className="text-emerald-600">Lux</span>
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Partner Portal (Labs & Pharmacies)
-            </p>
+            <p className="text-sm text-slate-500 mt-1">Partner Portal</p>
           </div>
 
           {/* Mode Switch */}
           <div className="flex mb-6 bg-slate-100 rounded-full p-1">
             <button
               className={`w-1/2 py-2 rounded-full text-sm ${
-                mode === "signup"
-                  ? "bg-white shadow font-medium"
-                  : "text-slate-500"
+                mode === "signup" ? "bg-white shadow font-medium" : "text-slate-500"
               }`}
               onClick={() => {
                 setMode("signup");
@@ -59,15 +122,18 @@ export default function PartnerAuth() {
             </button>
             <button
               className={`w-1/2 py-2 rounded-full text-sm ${
-                mode === "login"
-                  ? "bg-white shadow font-medium"
-                  : "text-slate-500"
+                mode === "login" ? "bg-white shadow font-medium" : "text-slate-500"
               }`}
               onClick={() => setMode("login")}
             >
               Login
             </button>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <p className="text-red-500 text-sm text-center mb-2">{error}</p>
+          )}
 
           {/* LOGIN */}
           {mode === "login" && (
@@ -87,7 +153,10 @@ export default function PartnerAuth() {
                   setFormData({ ...formData, password: e.target.value })
                 }
               />
-              <Button className="w-full rounded-full py-6">
+              <Button
+                className="w-full rounded-full py-6"
+                onClick={() => navigate("/dashboard")}
+              >
                 Login
               </Button>
               <p className="text-xs text-center text-slate-500">
@@ -96,10 +165,9 @@ export default function PartnerAuth() {
             </div>
           )}
 
-          {/* SIGN UP */}
+          {/* SIGNUP FLOW */}
           {mode === "signup" && (
             <>
-              {/* STEP 1 – BASIC DETAILS */}
               {step === 1 && (
                 <div className="space-y-4">
                   <Input
@@ -109,22 +177,6 @@ export default function PartnerAuth() {
                       setFormData({ ...formData, orgName: e.target.value })
                     }
                   />
-
-                  <select 
-                    className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
-                    value={formData.businessType}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        businessType: e.target.value,
-                      })
-                    }
-                  >
-                    <option>Diagnostic Lab</option>
-                    <option>Pharmaceutical</option>
-                    <option>Clinic / Hospital</option>
-                  </select>
-
                   <Input
                     placeholder="Business Email"
                     value={formData.email}
@@ -132,7 +184,6 @@ export default function PartnerAuth() {
                       setFormData({ ...formData, email: e.target.value })
                     }
                   />
-
                   <Input
                     type="password"
                     placeholder="Create Password"
@@ -141,7 +192,6 @@ export default function PartnerAuth() {
                       setFormData({ ...formData, password: e.target.value })
                     }
                   />
-
                   <Input
                     placeholder="Phone Number"
                     value={formData.phone}
@@ -149,39 +199,16 @@ export default function PartnerAuth() {
                       setFormData({ ...formData, phone: e.target.value })
                     }
                   />
-
-                  <Input
-                    placeholder="GST Number"
-                    value={formData.gstNumber}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        gstNumber: e.target.value.toUpperCase(),
-                      })
-                    }
-                  />
-
-                  <Input
-                    placeholder="License Number"
-                    value={formData.licenseNumber}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        licenseNumber: e.target.value,
-                      })
-                    }
-                  />
-
                   <Button
                     className="w-full rounded-full py-6"
-                    onClick={handleNext}
+                    onClick={handleSendOtp}
+                    disabled={loading}
                   >
-                    Send OTP
+                    {loading ? "Sending OTP..." : "Send OTP"}
                   </Button>
                 </div>
               )}
 
-              {/* STEP 2 – OTP */}
               {step === 2 && (
                 <div className="space-y-5">
                   <p className="text-sm text-center text-slate-500">
@@ -196,43 +223,66 @@ export default function PartnerAuth() {
                   />
                   <Button
                     className="w-full rounded-full py-6"
-                    onClick={handleNext}
+                    onClick={handleVerifyOtp}
+                    disabled={loading}
                   >
-                    Verify OTP
+                    {loading ? "Verifying..." : "Verify OTP"}
                   </Button>
                 </div>
               )}
 
-              {/* STEP 3 – DOCUMENTS */}
               {step === 3 && (
                 <div className="space-y-4">
                   <p className="text-sm text-center text-slate-500">
                     Upload Required Documents
                   </p>
 
-                  <Input type="file" />
-                  <p className="text-xs text-slate-400">
-                    License Certificate
-                  </p>
+                  {/* License */}
+                  <Input
+                    type="file"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        licenseFile: e.target.files?.[0] || null,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-slate-400">License Certificate</p>
 
-                  <Input type="file" />
+                  {/* GST */}
+                  <Input
+                    type="file"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        gstFile: e.target.files?.[0] || null,
+                      })
+                    }
+                  />
                   <p className="text-xs text-slate-400">GST Certificate</p>
 
-                  <Input type="file" />
-                  <p className="text-xs text-slate-400">
-                    NABL Certificate (optional)
-                  </p>
+                  {/* NABL */}
+                  <Input
+                    type="file"
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        nablFile: e.target.files?.[0] || null,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-slate-400">NABL Certificate</p>
 
                   <Button
                     className="w-full rounded-full py-6"
-                    onClick={handleNext}
+                    onClick={handleSubmit}
+                    disabled={loading}
                   >
-                    Submit for Approval
+                    {loading ? "Submitting..." : "Submit for Approval"}
                   </Button>
                 </div>
               )}
 
-              {/* STEP 4 – PENDING */}
               {step === 4 && (
                 <div className="text-center space-y-4">
                   <p className="text-lg">🎉 Application Submitted</p>
@@ -245,7 +295,6 @@ export default function PartnerAuth() {
                 </div>
               )}
 
-              {/* Step indicators */}
               <div className="mt-6 flex justify-center gap-2">
                 {[1, 2, 3, 4].map((s) => (
                   <span
