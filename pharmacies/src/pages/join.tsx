@@ -50,7 +50,7 @@ export default function PartnerAuth() {
     }
   };
 
-  // ✅ Handle OTP Verification
+  // Handle OTP Verification
   const handleVerifyOtp = async () => {
     setLoading(true);
     setError(null);
@@ -67,7 +67,7 @@ export default function PartnerAuth() {
     }
   };
 
-  // 📦 Handle Final Form Submission
+  // Handle Final Form Submission
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
