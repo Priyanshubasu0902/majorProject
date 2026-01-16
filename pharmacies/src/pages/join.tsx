@@ -100,15 +100,12 @@ export default function PartnerAuth() {
       if (licenseFile) {
         formDataToSend.append("licenseFile", licenseFile);
       }
-
       if (gstFile) {
         formDataToSend.append("gstFile", gstFile);
       }
-
       if (nablFile) {
         formDataToSend.append("nablFile", nablFile);
       }
-
       const { data } = await axios.post(
         `${API}/api/pharmacy/signUp`,
         formDataToSend
