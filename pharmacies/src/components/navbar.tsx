@@ -20,23 +20,7 @@ const Navbar = () => {
             </span>
           </div>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
-            <a className="hover:text-emerald-600 transition" href="#">
-              Dashboard
-            </a>
-            <a className="hover:text-emerald-600 transition" href="#">
-              Products
-            </a>
-            <a className="hover:text-emerald-600 transition" href="#">
-              Orders
-            </a>
-            <a className="hover:text-emerald-600 transition" href="#">
-              Profile
-            </a>
-          </div>
-
-          {/* Action */}
+          {/* Logout Button */}
           <button className="rounded-full bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow-md hover:bg-emerald-700 transition">
             Logout
           </button>

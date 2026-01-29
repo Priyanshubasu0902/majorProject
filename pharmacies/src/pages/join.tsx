@@ -83,9 +83,9 @@ export default function PartnerAuth() {
   };
 
   // Handle Final Form Submission
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError(null);
+  const onSubmitHandler = async (e: React.FormEvent) => {
+    e.preventDefault();
+
     try {
       setLoading(true);
 

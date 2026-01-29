@@ -17,10 +17,10 @@ const App = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50">
       <PharmacyProvider>
         <Routes>
-          {/* ✅ PUBLIC ROUTE */}
+          {/* PUBLIC ROUTE */}
           <Route path="/pharmacy/login" element={<Join />} />
 
-          {/* ✅ PROTECTED ROUTES */}
+          {/*PROTECTED ROUTES */}
           <Route
             path="/*"
             element={
@@ -31,7 +31,7 @@ const App = () => {
                   <main className="flex-1 p-10 bg-slate-50">
                     <Routes>
                       <Route
-                        path="/"
+                        path="/dashboard"
                         element={
                           <PharmacyRoute>
                             <Dashboard />
