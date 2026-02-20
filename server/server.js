@@ -17,7 +17,7 @@ await connectDB();
 await connectCloudinary();
 
 app.use(cors({
-  origin: "http://localhost:5174",
+//   origin: "http://localhost:5174",
   credentials: true
 }));
 app.use(express.json());

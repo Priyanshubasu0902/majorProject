@@ -1,5 +1,5 @@
 import React from "react";
-import Footer from "../components/Footer"; // ✅ make sure this path is correct
+import Footer from "../components/Footer";
 
 const Dashboard = () => {
   return (

@@ -3,7 +3,6 @@ import { v2 as cloudinary } from "cloudinary";
 import pharmacyModel from "../models/Pharmacies.js";
 import generateToken from "../utils/generateToken.js";
 import pharmacyProductModel from "../models/PharmacyProduct.js";
-import pharmacy from "../models/Pharmacies.js";
 
 export const signUpPharmacy = async (req, res) => {
   const { name, email, number, password, address, gstNumber, licenseNumber } =
@@ -145,52 +144,6 @@ export const getPharmacy = async (req, res) => {
   }
 };
 
-export const getProducts = async (req, res) => {
-  try {
-    const pharmacy = req.pharmacy;
-    const products = await pharmacyProductModel.find({
-      pharmacyId: pharmacy._id,
-    });
-    res.json({ success: true, products });
-  } catch (error) {
-    res.json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-export const getProduct = async (req, res) => {
-  try {
-    const pharmacy = req.pharmacy;
-    const product = await pharmacyProductModel.findOne({
-      _id: req.params.id,
-      pharmacyId: pharmacy._id,
-    });
-    res.json({ success: true, product });
-  } catch (error) {
-    res.json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-export const getPharmacyByUser = async (req, res) => {
-  try {
-    const pharmacy = await pharmacyModel.findOne({ _id: req.params.id });
-    res.json({
-      success: true,
-      pharmacy,
-    });
-  } catch (error) {
-    res.json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
 export const deletePharmacy = async (req, res) => {};
 
 export const editPharmacy = async (req, res) => {};
@@ -257,15 +210,46 @@ export const addProduct = async (req, res) => {
   }
 };
 
+export const getProducts = async (req, res) => {
+  try {
+    const user = req.pharmacy;
+    const products = await pharmacyProductModel.find({
+      pharmacyId: user._id,
+    });
+    res.json({ success: true, products });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getProduct = async (req, res) => {
+  try {
+    const user = req.pharmacy;
+    const product = await pharmacyProductModel.findOne({
+      _id: req.params.id,
+      pharmacyId: user._id,
+    });
+    res.json({ success: true, product });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const updateProduct = async (req, res) => {};
 
 export const incrementQuantity = async (req, res) => {
   try {
     const user = req.pharmacy;
     const product = await pharmacyProductModel.findOneAndUpdate(
-      { pharmacyId: pharmacy._id, _id: req.params.id },
+      { pharmacyId: user._id, _id: req.params.id },
       { $inc: { no_of_Product: 1 } },
-      { new: true }
+      { new: true },
     );
     res.json({
       success: true,
@@ -280,16 +264,20 @@ export const decrementQuantity = async (req, res) => {
   try {
     const user = req.pharmacy;
     const product = await pharmacyProductModel.findOneAndUpdate(
-      { pharmacyId: pharmacy._id, _id: req.params.id, no_of_Product:{$gte: 1} },
+      {
+        pharmacyId: user._id,
+        _id: req.params.id,
+        no_of_Product: { $gte: 1 },
+      },
       { $inc: { no_of_Product: -1 } },
-      { new: true }
+      { new: true },
     );
     res.json({
       success: true,
       message: "Product incremented successfully",
     });
   } catch (error) {
-    res.json({success: false, message: error.message});
+    res.json({ success: false, message: error.message });
   }
 };
 
@@ -315,7 +303,7 @@ export const changeVisibility = async (req, res) => {
     const user = req.pharamacy;
     const product = await pharmacyProductModel.findOneAndUpdate(
       { pharmacyId: user._id, _id: req.params.id },
-      { visibility }
+      { visibility },
     );
     res.json({
       success: true,
@@ -329,7 +317,5 @@ export const changeVisibility = async (req, res) => {
 export const viewOrders = async (req, res) => {};
 
 export const updateOrderStatus = async (req, res) => {};
-
-export const checkInventory = async (req, res) => {};
 
 export const placeOrder = async (req, res) => {};

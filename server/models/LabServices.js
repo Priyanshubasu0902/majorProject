@@ -16,7 +16,7 @@ const labServiceSchema = mongoose.Schema({
     required: true,
   },
   type: { type: String, required: true },
-  serviceNumber: { type: String },
+  serviceNo: { type: String },
   requirement: {
     type: String, 
     required: true
@@ -53,13 +53,13 @@ const labServiceSchema = mongoose.Schema({
   caution: {
     type: String
   },
-  image: { type: String },
   visibility: {
     type: Boolean,
     enum: [true, false],
     default: false,
     required: true,
   },
+  image: { type: String },
 });
 
 const labService = mongoose.model(

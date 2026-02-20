@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import labModel from "../models/Labs.js";
 import generateToken from "../utils/generateToken.js";
+import labServiceModel from "../models/LabServices.js";
 
 export const signUpLab = async (req, res) => {
   const {
@@ -89,7 +90,7 @@ export const loginLab = async (req, res) => {
     return res.json({ success: false, message: "Missing Details" });
   }
   try {
-    const lab = await labModel.findOne({ $or: [{ number }, { email }] });
+    const lab = await labModel.findOne({ email });
     if (!lab) {
       return res.json({ success: false, message: "Invalid credentials" });
     }
@@ -125,14 +126,88 @@ export const getLab = async (req, res) => {
   }
 };
 
-export const getLabByUser = async (req, res) => {
+export const deleteLab = async (req, res) => {};
+
+export const editLab = async (req, res) => {};
+
+export const setPassword = async (req, res) => {};
+
+export const addService = async (req, res) => {
   try {
-    const lab = await labModel.findOne({ _id: req.params.id });
-    res,
-      jsob({
-        success: true,
-        lab,
-      });
+    const {
+      name,
+      description,
+      outcome,
+      type,
+      serviceNo,
+      requirement,
+      price,
+      discount,
+      duration_of_test,
+      duration_of_result,
+      visitLab,
+      caution,
+      visibility,
+    } = req.body;
+
+    const image = req.file;
+    const user = req.lab;
+
+    if (
+      name === "" ||
+      description === "" ||
+      outcome === "" ||
+      type === "" ||
+      serviceNo === "" ||
+      requirement === "" ||
+      price === "" ||
+      discount === "" ||
+      duration_of_test === "" ||
+      duration_of_result === "" ||
+      visitLab === "" ||
+      caution === "" ||
+      visibility === "" ||
+      !image
+    ) {
+      return res.json({ success: false, message: "Missing Details" });
+    }
+
+    const fileUpload = await cloudinary.uploader.upload(image.path);
+
+    const service = await labServiceModel.create({
+      name,
+      description,
+      outcome,
+      labId: user._id,
+      type,
+      serviceNo,
+      requirement,
+      price,
+      discount,
+      duration_of_test,
+      duration_of_result,
+      visitLab,
+      caution,
+      visibility,
+      image: fileUpload.secure_url,
+    });
+
+    res.json({
+      success: true,
+      service,
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const getServices = async (req, res) => {
+  try {
+    const lab = req.lab;
+    const service = await labServiceModel.find({
+      labId: lab._id,
+    });
+    res.json({ success: true, service });
   } catch (error) {
     res.json({
       success: false,
@@ -141,8 +216,59 @@ export const getLabByUser = async (req, res) => {
   }
 };
 
-export const deleteLab = async (req, res) => {};
+export const getService = async (req, res) => {
+  try {
+    const lab = req.lab;
+    const service = await labServiceModel.findOne({
+      _id: req.params.id,
+      labId: lab._id,
+    });
+    res.json({ success: true, service });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
-export const editLab = async (req, res) => {};
+export const updateService = async (req, res) => {};
 
-export const setPassword = async (req, res) => {};
+export const removeService = async (req, res) => {
+  try {
+    const user = req.lab;
+    const service = await labServiceModel.findOneAndDelete({
+      labId: user._id,
+      _id: req.params.id,
+    });
+    res.json({
+      success: true,
+      message: "Service Deleted Successfully",
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const changeVisibility = async (req, res) => {
+  try {
+    const { visibility } = req.body;
+    const user = req.lab;
+    const service = await labServiceModel.findOneAndUpdate(
+      { labId: user._id, _id: req.params.id },
+      { visibility },
+    );
+    res.json({
+      success: true,
+      message: "Service Visibility Changed Successfully",
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+export const viewOrders = async (req, res) => {};
+
+export const updateOrderStatus = async (req, res) => {};
+
+export const placeOrder = async (req, res) => {};

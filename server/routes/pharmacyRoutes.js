@@ -1,7 +1,7 @@
 import express from "express";
 import upload from '../config/multer.js';
-import { addProduct, changeVisibility, deletePharmacy, editPharmacy, getPharmacy, getPharmacyByUser, getProduct, getProducts, loginPharmacy, removeProduct, setPassword, signUpPharmacy } from '../controllers/pharmacyController.js'
-import { isLoggedIn, isPharmacyLoggedIn } from "../middlewares/isLoggedIn.js";
+import { addProduct, changeVisibility, deletePharmacy, editPharmacy, getPharmacy, getProduct, getProducts, loginPharmacy, removeProduct, setPassword, signUpPharmacy } from '../controllers/pharmacyController.js'
+import { isPharmacyLoggedIn } from "../middlewares/isLoggedIn.js";
 
 const router = express.Router();
 
@@ -17,9 +17,6 @@ router.post("/signUp", upload.fields([
 
 // Get pharmacy data by owner
 router.get("/myPharmacy" , isPharmacyLoggedIn, getPharmacy);
-
-// Get pharmacy data by user
-router.get("/:id", isLoggedIn, getPharmacyByUser);
 
 // Edit pharmacy details
 router.post("/editDetails", isPharmacyLoggedIn, editPharmacy);
