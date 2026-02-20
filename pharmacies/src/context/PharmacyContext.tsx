@@ -36,7 +36,7 @@ export const PharmacyProvider = ({ children }: Props) => {
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
 
-  // 🚪 Logout helper
+  // Logout helper
   const logout = () => {
     localStorage.removeItem("pharmacytoken");
     setPharmacyToken(null);
@@ -44,7 +44,7 @@ export const PharmacyProvider = ({ children }: Props) => {
     navigate("/pharmacy/login", { replace: true });
   };
 
-  // 🔐 Initial token check
+  // Initial token check
   useEffect(() => {
     const token = localStorage.getItem("pharmacytoken");
 
@@ -56,7 +56,7 @@ export const PharmacyProvider = ({ children }: Props) => {
     setPharmacyToken(token);
   }, []);
 
-  // 🔍 Validate token + role via backend
+  // Validate token + role via backend
   useEffect(() => {
     if (!pharmacyToken) return;
 
@@ -71,7 +71,7 @@ export const PharmacyProvider = ({ children }: Props) => {
           }
         );
 
-        // ❌ Block non-pharmacy users
+        // Block non-pharmacy users
         if (data.role !== "pharmacy") {
           logout();
           return;
