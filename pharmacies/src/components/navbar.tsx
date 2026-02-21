@@ -1,7 +1,11 @@
 import React from "react";
 import { Card } from "./ui/card";
+import {  usePharmacy } from "@/context/PharmacyContext";
 
 const Navbar = () => {
+
+  const {logout} = usePharmacy();
+
   return (
     <header className="sticky top-0 z-50 w-full px-6">
       {/* Full-width glass card */}
@@ -21,7 +25,8 @@ const Navbar = () => {
           </div>
 
           {/* Logout Button */}
-          <button className="rounded-full bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow-md hover:bg-emerald-700 transition">
+          <button className="rounded-full bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow-md hover:bg-emerald-700 transition cursor-pointer"
+          onClick={()=>logout()}>
             Logout
           </button>
 

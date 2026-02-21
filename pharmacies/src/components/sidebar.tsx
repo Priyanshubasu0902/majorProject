@@ -8,7 +8,7 @@ const Sidebar = () => {
       </h2>
 
       <nav className="space-y-2 text-sm">
-        <NavItem to="/">Dashboard</NavItem>
+        <NavItem to="/dashboard">Dashboard</NavItem>
         <NavItem to="/addproduct">Add Product</NavItem>
         <NavItem to="/products">View Products</NavItem>
         <NavItem to="/orders">Orders</NavItem>

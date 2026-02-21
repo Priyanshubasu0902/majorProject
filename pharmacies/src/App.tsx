@@ -57,17 +57,17 @@ const App = () => {
                       <Route
                         path="/orders"
                         element={
-                          <PharmacyRoute>
+                          // <PharmacyRoute>
                             <Orders />
-                          </PharmacyRoute>
+                          // </PharmacyRoute>
                         }
                       />
                       <Route
                         path="/profile"
                         element={
-                          <PharmacyRoute>
+                          // <PharmacyRoute>
                             <Profile />
-                          </PharmacyRoute>
+                          // </PharmacyRoute>
                         }
                       />
                     </Routes>

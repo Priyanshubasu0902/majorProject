@@ -98,6 +98,7 @@ export const loginPharmacy = async (req, res) => {
             number: pharmacy.number,
             address: pharmacy.address,
           },
+          role: "pharmacy",
           token: generateToken(pharmacy._id),
         });
       } else {
@@ -121,6 +122,7 @@ export const loginPharmacy = async (req, res) => {
             number: pharmacy.number,
             address: pharmacy.address,
           },
+          role: "pharmacy",
           token: generateToken(pharmacy._id),
         });
       } else {
@@ -156,7 +158,6 @@ export const addProduct = async (req, res) => {
       name,
       type,
       productNo,
-      quantity,
       no_of_Product,
       price,
       discount,
@@ -165,6 +166,7 @@ export const addProduct = async (req, res) => {
       prescription_required,
     } = req.body;
 
+    const quantity = JSON.parse(req.body.quantity);
     const image = req.file;
     const user = req.pharmacy;
 
@@ -177,7 +179,7 @@ export const addProduct = async (req, res) => {
       price === "" ||
       discount === "" ||
       productNo === "" ||
-      quantity === "" ||
+      (!quantity?.amount || !quantity?.unit) ||
       no_of_Product === "" ||
       !image
     ) {

@@ -1,7 +1,15 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Footer from "../components/Footer";
+import {  usePharmacy } from "@/context/PharmacyContext";
 
 const Dashboard = () => {
+
+  const { fetchProducts, products } = usePharmacy();
+
+  useEffect(()=> {
+    fetchProducts();
+  },[])
+
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50">
@@ -20,7 +28,7 @@ const Dashboard = () => {
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
-            <DashboardCard title="Total Products" value="24" />
+            <DashboardCard title="Total Products" value={products.length} />
             <DashboardCard title="Active Orders" value="6" />
             <DashboardCard title="Completed Orders" value="128" />
             <DashboardCard title="Canceled Orders" value="20" />
@@ -39,7 +47,7 @@ function DashboardCard({
   value,
 }: {
   title: string;
-  value: string;
+  value: string | number;
 }) {
   return (
     <div className="rounded-3xl bg-white p-6 shadow-lg border border-slate-100 hover:shadow-xl transition">

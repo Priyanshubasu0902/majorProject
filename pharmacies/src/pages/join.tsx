@@ -12,7 +12,7 @@ type Step = 1 | 2 | 3 | 4;
 type Mode = "login" | "signup";
 
 export default function PartnerAuth() {
-  const { setPharmacyToken, products } = usePharmacy();
+  const { setPharmacyToken, setRole, products } = usePharmacy();
 
   const [mode, setMode] = useState<Mode>("signup");
   const [step, setStep] = useState<Step>(1);
@@ -147,19 +147,22 @@ export default function PartnerAuth() {
     if (data.success) {
       localStorage.setItem("pharmacyToken", data.token);
       localStorage.setItem("partnerRole", data.role);
+      setPharmacyToken(data.token);
+      setRole(data.role);
 
       // toast.success("Login successful");
-
+       console.log("login successfull")
       // Role-based redirect
-      if (data.role === "pharmacy") {
-        navigate("/pharmacy/dashboard");
-      } else if (data.role === "lab") {
-        navigate("/lab/dashboard");
-      } else if (data.role === "doctor") {
-        navigate("/doctor/dashboard");
-      } else {
-        navigate("/");
-      }
+      // if (data.role === "pharmacy") {
+      //   navigate("/dashboard");
+      // } else if (data.role === "lab") {
+      //   navigate("/lab/dashboard");
+      // } else if (data.role === "doctor") {
+      //   navigate("/doctor/dashboard");
+      // } else {
+      //   navigate("/");
+      // }
+      navigate("/dashboard");
     } else {
       // toast.error(data.message);
       console.log(data.message);
@@ -279,7 +282,7 @@ export default function PartnerAuth() {
                     onChange={(e) => setAddress(e.target.value)}
                   />
                   <Button
-                    className="w-full rounded-full py-6"
+                    className="w-full rounded-full py-6 cursor-pointer"
                     onClick={handleSendOtp}
                     disabled={loading}
                   >
@@ -299,7 +302,7 @@ export default function PartnerAuth() {
                     onChange={(e) => setOtp(e.target.value)}
                   />
                   <Button
-                    className="w-full rounded-full py-6"
+                    className="w-full rounded-full py-6 cursor-pointer"
                     onClick={handleVerifyOtp}
                     disabled={loading}
                   >
@@ -338,7 +341,7 @@ export default function PartnerAuth() {
                   <p className="text-xs text-slate-400">NABL Certificate</p>
 
                   <Button
-                    className="w-full rounded-full py-6"
+                    className="w-full rounded-full py-6 cursor-pointer"
                     onClick={onSubmitHandler}
                     disabled={loading}
                   >

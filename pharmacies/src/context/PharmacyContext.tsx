@@ -14,6 +14,7 @@ interface PharmacyContextType {
   pharmacyToken: string | null;
   setPharmacyToken: React.Dispatch<React.SetStateAction<string | null>>;
   role: string | null;
+   setRole: React.Dispatch<React.SetStateAction<string | null>>;
   loading: boolean;
   fetchProducts: () => Promise<void>;
   logout: () => void;
@@ -32,13 +33,14 @@ export const PharmacyProvider = ({ children }: Props) => {
   const [pharmacyData, setPharmacyData] = useState<any>(null);
   const [pharmacyToken, setPharmacyToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
 
   // Logout helper
   const logout = () => {
-    localStorage.removeItem("pharmacytoken");
+    localStorage.removeItem("pharmacyToken");
+    localStorage.removeItem("partnerRole");
     setPharmacyToken(null);
     setRole(null);
     navigate("/pharmacy/login", { replace: true });
@@ -46,49 +48,50 @@ export const PharmacyProvider = ({ children }: Props) => {
 
   // Initial token check
   useEffect(() => {
-    const token = localStorage.getItem("pharmacytoken");
+    const token = localStorage.getItem("pharmacyToken");
+    const role = localStorage.getItem("partnerRole");
 
     if (!token) {
       logout();
       return;
     }
-
     setPharmacyToken(token);
+    setRole(role);
   }, []);
 
   // Validate token + role via backend
-  useEffect(() => {
-    if (!pharmacyToken) return;
+  // useEffect(() => {
+  //   if (!pharmacyToken) return;
 
-    const validateAccess = async () => {
-      try {
-        const { data } = await axios.get(
-          `${backendURL}/api/pharmacy/myPharmacy`,
-          {
-            headers: {
-              Authorization: `Bearer ${pharmacyToken}`,
-            },
-          }
-        );
+  //   const validateAccess = async () => {
+  //     try {
+  //       const { data } = await axios.get(
+  //         `${backendURL}/api/pharmacy/myPharmacy`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${pharmacyToken}`,
+  //           },
+  //         },
+  //       );
 
-        // Block non-pharmacy users
-        if (data.role !== "pharmacy") {
-          logout();
-          return;
-        }
+  //       // Block non-pharmacy users
+  //       if (data.role !== "pharmacy") {
+  //         logout();
+  //         return;
+  //       }
 
-        setRole(data.role);
-        setPharmacyData(data.pharmacy);
-      } catch (error) {
-        // ❌ Invalid / expired token
-        logout();
-      } finally {
-        setLoading(false);
-      }
-    };
+  //       setRole(data.role);
+  //       setPharmacyData(data.pharmacy);
+  //     } catch (error) {
+  //       // ❌ Invalid / expired token
+  //       logout();
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    validateAccess();
-  }, [pharmacyToken]);
+  //   validateAccess();
+  // }, [pharmacyToken]);
 
   // 📦 Fetch products (only if role is valid)
   const fetchProducts = async () => {
@@ -108,12 +111,13 @@ export const PharmacyProvider = ({ children }: Props) => {
 
   const value = {
     products,
+    fetchProducts,
     pharmacyData,
     pharmacyToken,
     setPharmacyToken,
     role,
+    setRole,
     loading,
-    fetchProducts,
     logout,
   };
 

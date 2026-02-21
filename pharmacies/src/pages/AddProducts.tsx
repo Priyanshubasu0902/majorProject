@@ -1,215 +1,233 @@
 import React, { useState } from "react";
+import axios from "axios";
+import {  usePharmacy } from "@/context/PharmacyContext";
+
+const API = import.meta.env.VITE_BACKEND_URL;
 
 const AddProduct = () => {
-  const [form, setForm] = useState({
-    name: "",
-    category: "",
-    description: "",
-    dosage: "",
-    strength: "",
-    quantity: "",
-    price: "",
-    prescriptionRequired: "yes",
-    cautions: "",
-    allergies: "",
-    usage: "",
-  });
+  const { pharmacyToken } = usePharmacy();
+  
+  const [name, setName] = useState("");
+  const [type, setType] = useState("");
+  const [productNo, setProductNo] = useState("");
+  const [quantityAmount, setQuantityAmount] = useState("");
+  const [quantityUnit, setQuantityUnit] = useState("tablet");
+  const [no_of_product, setNo_of_Product] = useState("");
+  const [price, setPrice] = useState("");
+  const [discount, setDiscount] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [visibility, setVisibility] = useState("true");
+  const [prescription_required, setPrescription_required] = useState("false");
+  const [image, setImage] = useState<File | null>(null);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const formData = new FormData();
 
-  const handleSubmit = () => {
-    console.log("Product Submitted:", form);
-    alert("Product added successfully!");
+      formData.append("name", name);
+      formData.append("type", type);
+      formData.append("productNo", productNo);
+
+      formData.append(
+        "quantity",
+        JSON.stringify({
+          amount: Number(quantityAmount),
+          unit: quantityUnit,
+        }),
+      );
+
+      formData.append("no_of_Product", no_of_product);
+      formData.append("price", price);
+      formData.append("discount", discount);
+      formData.append("companyName", companyName);
+
+      formData.append("visibility", visibility);
+      formData.append("prescription_required", prescription_required);
+
+      if (image) formData.append("image", image);
+
+      const {data} = await axios.post(
+        `${API}/api/pharmacy/addProduct`,
+        formData,
+        { headers: {
+          Authorization: `Bearer ${pharmacyToken}`,
+        } },
+      );
+
+      if (data.success) {
+        console.log("Product added successfully!");
+        setName("");
+        setType("");
+        setProductNo("");
+        setQuantityAmount("");
+        setQuantityUnit("");
+        setNo_of_Product("");
+        setPrice("");
+        setDiscount("");
+        setCompanyName("");
+        setVisibility("");
+        setPrescription_required("");
+        setImage(null);
+      } else {
+        console.log(data.message);
+      }
+    } catch (err: any) {
+      console.log(err.response?.data?.message || "Upload failed");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-10 py-8">
-      <h1 className="text-3xl font-light text-slate-900">
-        Add Medicine / Product
-      </h1>
-      <p className="mt-2 text-slate-600 max-w-2xl">
-        Add medicines available in your pharmacy. Clearly specify prescription
-        requirements, dosage, and safety information.
-      </p>
+    <div className="min-h-screen bg-slate-50 px-6 py-10 flex justify-center">
+      <div className="w-full max-w-4xl bg-white shadow-xl rounded-3xl p-10">
+        {/* Header */}
+        <h1 className="text-3xl font-semibold text-slate-800">Add Product</h1>
+        <p className="text-slate-500 mt-1 mb-8">
+          Enter product details carefully for accurate listing.
+        </p>
 
-      <div className="mt-8 bg-white rounded-3xl shadow-lg p-8 max-w-4xl">
-        {/* Product Name */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700">
-            Medicine Name
-          </label>
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            className="input"
-            placeholder="e.g. Paracetamol"
-          />
-        </div>
-
-        {/* Category */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700">
-            Category
-          </label>
-          <input
-            name="category"
-            value={form.category}
-            onChange={handleChange}
-            className="input"
-            placeholder="Tablet / Syrup / Injection"
-          />
-        </div>
-
-        {/* Dosage & Strength */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Dosage
-            </label>
+            <label className="label">Product Name</label>
             <input
-              name="dosage"
-              value={form.dosage}
-              onChange={handleChange}
-              className="input"
-              placeholder="e.g. 1 tablet twice a day"
+              className="input border rounded-md"
+              placeholder="Medicine Name"
+              onChange={(e) => setName(e.target.value)}
+              value={name}
             />
           </div>
 
+          {/* Type */}
           <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Strength
-            </label>
+            <label className="label">Product Type:</label>
             <input
-              name="strength"
-              value={form.strength}
-              onChange={handleChange}
-              className="input"
-              placeholder="e.g. 500 mg"
-            />
-          </div>
-        </div>
-
-        {/* Quantity & Price */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Quantity Available
-            </label>
-            <input
-              name="quantity"
-              value={form.quantity}
-              onChange={handleChange}
-              className="input"
-              placeholder="e.g. 100 strips"
+              className="input border rounded-md"
+              placeholder="Type (Tablet/Syrup)"
+              onChange={(e) => setType(e.target.value)}
+              value={type}
             />
           </div>
 
+          {/* Product Number */}
           <div>
-            <label className="block text-sm font-medium text-slate-700">
-              Price (₹)
-            </label>
+            <label className="label">Product Number:</label>
             <input
-              name="price"
-              value={form.price}
-              onChange={handleChange}
-              className="input"
-              placeholder="e.g. 35"
+              className="input border rounded-md"
+              placeholder="Product Number"
+              onChange={(e) => setProductNo(e.target.value)}
+              value={productNo}
             />
           </div>
-        </div>
 
-        {/* Prescription Required */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700">
-            Prescription Required?
-          
-          <select
-            name="prescriptionRequired"
-            value={form.prescriptionRequired}
-            onChange={handleChange}
-            className="input"
-          >
-            <option value="yes">Yes (Doctor Prescription Required)</option>
-            <option value="no">No (OTC Medicine)</option>
-                      </select>
-                      </label>
+          {/* Company */}
+          <div>
+            <label className="label">Company Name:</label>
+            <input
+              className="input border rounded-md"
+              placeholder="Company Name"
+              onChange={(e) => setCompanyName(e.target.value)}
+              value={companyName}
+            />
+          </div>
 
-          {form.prescriptionRequired === "yes" && (
-            <p className="mt-2 text-sm text-red-600">
-              ⚠ This medicine cannot be purchased without a valid prescription.
-            </p>
-          )}
-        </div>
+          {/* Quantity */}
+          <div className="md:col-span-2">
+            <label className="label">Quantity:</label>
 
-        {/* Description */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700">
-            Product Description
-          </label>
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            rows={3}
-            className="textarea"
-            placeholder="Short description of the medicine"
-          />
-        </div>
+            <div className="flex gap-3">
+              {/* Amount */}
+              <input
+                className="input border rounded-md flex-1"
+                placeholder="Quantity Amount"
+                onChange={(e) => setQuantityAmount(e.target.value)}
+                value={quantityAmount}
+              />
 
-        {/* Usage */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700">
-            Usage Instructions
-          </label>
-          <textarea
-            name="usage"
-            value={form.usage}
-            onChange={handleChange}
-            rows={3}
-            className="textarea"
-            placeholder="How and when should this medicine be used"
-          />
-        </div>
+              {/* Unit */}
+              <select
+                className="input border rounded-md w-32"
+                onChange={(e) => setQuantityUnit(e.target.value)}
+              >
+                <option value="tablet">Tablet</option>
+                <option value="ml">ML</option>
+                <option value="items">Items</option>
+              </select>
+            </div>
+          </div>
 
-        {/* Cautions */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700">
-            Cautions / Warnings
-          </label>
-          <textarea
-            name="cautions"
-            value={form.cautions}
-            onChange={handleChange}
-            rows={3}
-            className="textarea"
-            placeholder="e.g. Not for children below 12 years"
-          />
-        </div>
+          {/* Stock */}
+          <div>
+            <label className="label">No. of Products:</label>
+            <input
+              className="input border rounded-md"
+              placeholder="Number of Products"
+              onChange={(e) => setNo_of_Product(e.target.value)}
+              value={no_of_product}
+            />
+          </div>
 
-        {/* Allergies */}
-        <div className="mb-8">
-          <label className="block text-sm font-medium text-slate-700">
-            Allergy Information
-          </label>
-          <textarea
-            name="allergies"
-            value={form.allergies}
-            onChange={handleChange}
-            rows={2}
-            className="textarea"
-            placeholder="Who should avoid this medicine?"
-          />
+          {/* Price */}
+          <div>
+            <label className="label">Price ₹:</label>
+            <input
+              className="input border rounded-md"
+              placeholder="Price"
+              onChange={(e) => setPrice(e.target.value)}
+              value={price}
+            />
+          </div>
+
+          {/* Discount */}
+          <div>
+            <label className="label">Discount %:</label>
+            <input
+              className="input border rounded-md"
+              placeholder="Discount %"
+              onChange={(e) => setDiscount(e.target.value)}
+              value={discount}
+            />
+          </div>
+
+          {/* Visibility */}
+          <div>
+            <label className="label">Visibility:</label>
+            <select
+              className="input border rounded-md"
+              onChange={(e) => setVisibility(e.target.value)}
+            >
+              <option value="true">Visible</option>
+              <option value="false">Hidden</option>
+            </select>
+          </div>
+
+          {/* Prescription */}
+          <div className="md:col-span-2">
+            <label className="label">Prescription Required:</label>
+            <select
+              className="input border rounded-md"
+              onChange={(e) => setPrescription_required(e.target.value)}
+            >
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </div>
+
+          {/* Image */}
+          <div className="md:col-span-2">
+            <label className="label">Product Image:</label>
+            <input
+              type="file"
+              className="file border rounded-md"
+              onChange={(e) => setImage(e.target.files?.[0] || null)}
+            />
+          </div>
         </div>
 
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          className="w-full rounded-full bg-emerald-600 text-white py-4 text-lg font-medium hover:bg-emerald-700 transition"
+          className="mt-10 w-full rounded-full bg-emerald-600 text-white py-4 text-lg font-medium hover:bg-emerald-700 transition"
         >
           Add Product
         </button>
