@@ -4,11 +4,7 @@ import {  usePharmacy } from "@/context/PharmacyContext";
 
 const Dashboard = () => {
 
-  const { fetchProducts, products } = usePharmacy();
-
-  useEffect(()=> {
-    fetchProducts();
-  },[])
+  const { products } = usePharmacy();
 
   return (
     <>

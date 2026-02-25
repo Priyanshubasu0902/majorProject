@@ -14,7 +14,7 @@ interface PharmacyContextType {
   pharmacyToken: string | null;
   setPharmacyToken: React.Dispatch<React.SetStateAction<string | null>>;
   role: string | null;
-   setRole: React.Dispatch<React.SetStateAction<string | null>>;
+  setRole: React.Dispatch<React.SetStateAction<string | null>>;
   loading: boolean;
   fetchProducts: () => Promise<void>;
   logout: () => void;
@@ -33,7 +33,7 @@ export const PharmacyProvider = ({ children }: Props) => {
   const [pharmacyData, setPharmacyData] = useState<any>(null);
   const [pharmacyToken, setPharmacyToken] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const backendURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -43,21 +43,34 @@ export const PharmacyProvider = ({ children }: Props) => {
     localStorage.removeItem("partnerRole");
     setPharmacyToken(null);
     setRole(null);
+    setPharmacyData(null);
     navigate("/pharmacy/login", { replace: true });
   };
 
   // Initial token check
   useEffect(() => {
     const token = localStorage.getItem("pharmacyToken");
-    const role = localStorage.getItem("partnerRole");
+    const partnerRole = localStorage.getItem("partnerRole");
 
-    if (!token) {
+    if (!token || !partnerRole) {
       logout();
       return;
     }
-    setPharmacyToken(token);
-    setRole(role);
+
+    if (token && partnerRole) {
+      setPharmacyToken(token);
+      setRole(partnerRole);
+    }
+
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (pharmacyToken && role === "pharmacy") {
+      fetchPharmacyData();
+      fetchProducts();
+    }
+  }, [pharmacyToken, role]);
 
   // Validate token + role via backend
   // useEffect(() => {
@@ -104,6 +117,24 @@ export const PharmacyProvider = ({ children }: Props) => {
         },
       });
       setProducts(data.products);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchPharmacyData = async () => {
+    if (!pharmacyToken || role !== "pharmacy") return;
+
+    try {
+      const { data } = await axios.get(
+        `${backendURL}/api/pharmacy/myPharmacy`,
+        {
+          headers: {
+            Authorization: `Bearer ${pharmacyToken}`,
+          },
+        },
+      );
+      setPharmacyData(data.pharmacy);
     } catch (error) {
       console.error(error);
     }

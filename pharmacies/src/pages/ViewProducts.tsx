@@ -6,16 +6,12 @@ import { usePharmacy } from "@/context/PharmacyContext";
 const ViewProducts = () => {
   const {
     products,
-    fetchProducts,
     // deleteProduct,
     // toggleVisibility,
     // incrementStock,
     // decrementStock,
   } = usePharmacy();
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 px-12 py-10">

@@ -6,7 +6,7 @@ import { JSX } from "react/jsx-dev-runtime";
 export function PharmacyRoute({ children }: { children: JSX.Element }) {
   const { pharmacyToken, role, loading } = usePharmacy();
 
-  if (loading) return null;
+  if (loading) return <div>Loading...</div>;
 
   if (!pharmacyToken || role !== "pharmacy") {
     return <Navigate to="/pharmacy/login" replace />;

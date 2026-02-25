@@ -1,11 +1,21 @@
 import React from "react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { usePharmacy } from "@/context/PharmacyContext";
 
 const Profile = () => {
+  const { pharmacyData } = usePharmacy();
+
+  if (!pharmacyData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-500">
+        Loading pharmacy profile...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 px-12 py-10">
-      
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-4xl font-light text-slate-900">
@@ -17,30 +27,29 @@ const Profile = () => {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        
         {/* Left: Pharmacy Details */}
         <Card className="lg:col-span-2 rounded-3xl shadow-lg border border-slate-100">
           <CardContent className="p-8 space-y-6">
-            
             <h2 className="text-xl font-semibold text-slate-900">
               Pharmacy Information
             </h2>
 
             <div className="grid md:grid-cols-2 gap-6 text-sm">
-              <ProfileItem label="Pharmacy Name" value="MedLux Pharmacy" />
+              <ProfileItem label="Pharmacy Name" value={pharmacyData?.name} />
               <ProfileItem label="Owner Name" value="Nandini Das" />
-              <ProfileItem label="License Number" value="PHARMA-IND-45219" />
-              <ProfileItem label="Verification Status" value="Verified ✅" />
-              <ProfileItem label="Contact Number" value="+91 98765 43210" />
-              <ProfileItem label="Email Address" value="medlux.pharma@gmail.com" />
               <ProfileItem
-                label="Address"
-                value="BTM Layout, 2nd Stage, Bangalore, Karnataka - 560076"
-                full
+                label="License Number"
+                value={pharmacyData?.licenseNumber}
               />
+              <ProfileItem label="Gst Number" value={pharmacyData?.gstNumber} />
+              <ProfileItem
+                label="Verification Status"
+                value={pharmacyData?.isApproved ? "Approved" : "Not Approved"}
+              />
+              <ProfileItem label="Contact Number" value={pharmacyData?.number} />
+              <ProfileItem label="Email Address" value={pharmacyData?.email} />
+              <ProfileItem label="Address" value={pharmacyData?.address} full />
             </div>
-
-           
           </CardContent>
         </Card>
 
@@ -66,7 +75,6 @@ const Profile = () => {
             </p>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );
@@ -83,12 +91,8 @@ function ProfileItem({
 }) {
   return (
     <div className={full ? "md:col-span-2" : ""}>
-      <p className="text-xs uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p className="mt-1 font-medium text-slate-900">
-        {value}
-      </p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 font-medium text-slate-900">{value}</p>
     </div>
   );
 }

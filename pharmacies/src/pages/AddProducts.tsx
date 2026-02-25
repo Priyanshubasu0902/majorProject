@@ -5,7 +5,7 @@ import {  usePharmacy } from "@/context/PharmacyContext";
 const API = import.meta.env.VITE_BACKEND_URL;
 
 const AddProduct = () => {
-  const { pharmacyToken } = usePharmacy();
+  const { pharmacyToken, fetchProducts } = usePharmacy();
   
   const [name, setName] = useState("");
   const [type, setType] = useState("");
@@ -69,6 +69,7 @@ const AddProduct = () => {
         setVisibility("");
         setPrescription_required("");
         setImage(null);
+        fetchProducts();
       } else {
         console.log(data.message);
       }
@@ -138,7 +139,7 @@ const AddProduct = () => {
             <div className="flex gap-3">
               {/* Amount */}
               <input
-                className="input border rounded-md flex-1"
+                className="input border rounded-md "
                 placeholder="Quantity Amount"
                 onChange={(e) => setQuantityAmount(e.target.value)}
                 value={quantityAmount}
@@ -146,7 +147,7 @@ const AddProduct = () => {
 
               {/* Unit */}
               <select
-                className="input border rounded-md w-32"
+                className="input border rounded-md w-26"
                 onChange={(e) => setQuantityUnit(e.target.value)}
               >
                 <option value="tablet">Tablet</option>
