@@ -33,7 +33,7 @@ export default function BusinessType() {
           {/* DIAGNOSTIC LAB */}
           <Card
             onClick={() =>
-              handleRedirect("https://lab.medicare.com")
+  handleRedirect(import.meta.env.VITE_PHARMACY_APP_URL)
             }
             className="cursor-pointer rounded-3xl border hover:shadow-xl transition"
           >
