@@ -4,11 +4,7 @@ import {  useLab } from "@/context/LabContext";
 
 const Dashboard = () => {
 
-  const { fetchTests, tests } = useLab();
-
-  useEffect(()=> {
-    fetchTests();
-  },[])
+  const { tests } = useLab();
 
   return (
     <>

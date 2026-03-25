@@ -1,3 +1,4 @@
+// src/pages/ViewProducts.tsx
 import React, { useEffect } from "react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -6,10 +7,10 @@ import { usePharmacy } from "@/context/PharmacyContext";
 const ViewProducts = () => {
   const {
     products,
-    // deleteProduct,
-    // toggleVisibility,
-    // incrementStock,
-    // decrementStock,
+    deleteProduct,
+    changeVisibility,
+    incrementStock,
+    decrementStock,
   } = usePharmacy();
 
 
@@ -28,12 +29,12 @@ const ViewProducts = () => {
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {products.map((product) => (
+        {products?.map((product) => (
           <Card
             key={product._id}
             className="rounded-3xl border border-slate-100 shadow-md hover:shadow-xl transition"
           >
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 flex flex-col h-full">
 
               {/* Title */}
               <div className="flex justify-between items-start">
@@ -41,11 +42,11 @@ const ViewProducts = () => {
                   {product.name}
                 </h2>
 
-                {product.prescription_required && (
-                  <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600">
-                    Rx Required
-                  </span>
-                )}
+                {product.visibility ? (
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">Visible</span>
+                  ) : (
+                    <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-medium text-gray-600">Hidden</span>
+                  )}
               </div>
 
               {/* Image */}
@@ -70,21 +71,21 @@ const ViewProducts = () => {
                 <p><span className="font-medium">Discount:</span> {product.discount}%</p>
 
                 <p>
-                  <span className="font-medium">Visibility:</span>{" "}
-                  {product.visibility ? (
-                    <span className="text-emerald-600 font-medium">Visible</span>
+                  <span className="font-medium">Prescription:</span>{" "}
+                  {product.prescription_required ? (
+                    <span className="text-emerald-600 font-medium">Required</span>
                   ) : (
-                    <span className="text-slate-400">Hidden</span>
+                    <span className="text-slate-400">Not Required</span>
                   )}
                 </p>
               </div>
 
               {/* Actions */}
-              <div className="grid grid-cols-2 gap-3 pt-4">
+              <div className="grid grid-cols-2 gap-3 pt-4 mt-auto">
 
                 <Button
                   variant="outline"
-                  className="rounded-xl"
+                  className="rounded-xl cursor-pointer"
                   onClick={() => console.log("Edit", product._id)}
                 >
                   Edit
@@ -92,31 +93,30 @@ const ViewProducts = () => {
 
                 <Button
                   variant="destructive"
-                  className="rounded-xl"
-                  // onClick={() => deleteProduct(product._id)}
+                  className="rounded-xl cursor-pointer text-white bg-red-500"
+                  onClick={() => deleteProduct(product._id)}
                 >
                   Delete
                 </Button>
 
                 <Button
-                  className="rounded-xl"
-                  // onClick={() => toggleVisibility(product._id)}
+                  className="rounded-xl col-span-2 bg-black text-white cursor-pointer"
+                  onClick={() => changeVisibility(product._id)}
                 >
                   Toggle Visibility
                 </Button>
-
-                <div className="flex flex-wrap gap-2">
+                <div className="flex col-span-2 gap-2">
                   <Button
-                    className="flex-1 rounded-xl"
-                    // onClick={() => incrementStock(product._id)}
+                    className="flex-1 rounded-xl bg-green-300 cursor-pointer"
+                    onClick={() => incrementStock(product._id)}
                   >
                     + Stock
                   </Button>
 
                   <Button
                     variant="secondary"
-                    className="flex-1 rounded-xl"
-                    // onClick={() => decrementStock(product._id)}
+                    className="flex-1 rounded-xl bg-red-300 cursor-pointer"
+                    onClick={() => decrementStock(product._id)}
                   >
                     − Stock
                   </Button>

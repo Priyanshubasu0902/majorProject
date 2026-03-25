@@ -1,11 +1,21 @@
 import React from "react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
+import { useLab } from "@/context/LabContext";
 
 const Profile = () => {
+  const { labData } = useLab();
+
+  if (!labData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-500">
+        Loading pharmacy profile...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 px-12 py-10">
-      
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-4xl font-light text-slate-900">
@@ -17,30 +27,29 @@ const Profile = () => {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        
         {/* Left: Lab Details */}
         <Card className="lg:col-span-2 rounded-3xl shadow-lg border border-slate-100">
           <CardContent className="p-8 space-y-6">
-            
             <h2 className="text-xl font-semibold text-slate-900">
               Lab Information
             </h2>
 
             <div className="grid md:grid-cols-2 gap-6 text-sm">
-              <ProfileItem label="Lab Name" value="MedLux Lab" />
-              <ProfileItem label="Owner Name" value="Nandini Das" />
-              <ProfileItem label="License Number" value="LAB-IND-45219" />
-              <ProfileItem label="Verification Status" value="Verified ✅" />
-              <ProfileItem label="Contact Number" value="+91 98765 43210" />
-              <ProfileItem label="Email Address" value="medlux.pharma@gmail.com" />
+              <ProfileItem label="Lab Name" value={labData?.name} />
+              <ProfileItem label="Owner Name" value={labData?.ownerName} />
               <ProfileItem
-                label="Address"
-                value="BTM Layout, 2nd Stage, Bangalore, Karnataka - 560076"
-                full
+                label="License Number"
+                value={labData?.licenseNumber}
               />
+              <ProfileItem label="Gst Number" value={labData?.gstNumber} />
+              <ProfileItem
+                label="Verification Status"
+                value={labData?.isApproved ? "Approved" : "Not Approved"}
+              />
+              <ProfileItem label="Contact Number" value={labData?.number} />
+              <ProfileItem label="Email Address" value={labData?.email} />
+              <ProfileItem label="Address" value={labData?.address} full />
             </div>
-
-           
           </CardContent>
         </Card>
 
@@ -54,10 +63,9 @@ const Profile = () => {
             <div className="overflow-hidden rounded-2xl border border-slate-200">
               <iframe
                 title="Pharmacy Location"
-                src="https://www.google.com/maps?q=BTM+Layout+Bangalore&output=embed"
+                src={`https://www.google.com/maps?q=${labData.location.coordinates[1]},${labData.location.coordinates[0]}&z=15&output=embed`}
                 className="w-full h-64"
                 loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
 
@@ -66,7 +74,6 @@ const Profile = () => {
             </p>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );
@@ -83,12 +90,8 @@ function ProfileItem({
 }) {
   return (
     <div className={full ? "md:col-span-2" : ""}>
-      <p className="text-xs uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p className="mt-1 font-medium text-slate-900">
-        {value}
-      </p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 font-medium text-slate-900">{value}</p>
     </div>
   );
 }

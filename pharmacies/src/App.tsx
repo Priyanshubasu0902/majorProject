@@ -2,10 +2,12 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/navbar";
 import Sidebar from "./components/sidebar";
 import Footer from "./components/Footer";
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Dashboard from "./pages/Dashboard";
 import AddProduct from "./pages/AddProducts";
 import ViewProducts from "./pages/ViewProducts";
+import CreateOrder from "./pages/CreateOrder";
 import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import Join from "./pages/join";
@@ -16,6 +18,16 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50">
       <PharmacyProvider>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+          draggable
+          theme="light"
+        />
         <Routes>
           {/* PUBLIC ROUTE */}
           <Route path="/pharmacy/login" element={<Join />} />
@@ -67,6 +79,15 @@ const App = () => {
                         element={
                           <PharmacyRoute>
                             <Profile />
+                          </PharmacyRoute>
+                        }
+                      />
+
+                      <Route
+                        path="/create-order"
+                        element={
+                          <PharmacyRoute>
+                            <CreateOrder />
                           </PharmacyRoute>
                         }
                       />

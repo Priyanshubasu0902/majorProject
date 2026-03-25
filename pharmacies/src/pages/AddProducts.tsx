@@ -1,12 +1,14 @@
+// src/pages/AddProducts.tsx
 import React, { useState } from "react";
 import axios from "axios";
-import {  usePharmacy } from "@/context/PharmacyContext";
+import { usePharmacy } from "@/context/PharmacyContext";
+import { toast } from "react-toastify";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
 const AddProduct = () => {
   const { pharmacyToken, fetchProducts } = usePharmacy();
-  
+
   const [name, setName] = useState("");
   const [type, setType] = useState("");
   const [productNo, setProductNo] = useState("");
@@ -34,207 +36,149 @@ const AddProduct = () => {
         JSON.stringify({
           amount: Number(quantityAmount),
           unit: quantityUnit,
-        }),
+        })
       );
 
       formData.append("no_of_Product", no_of_product);
       formData.append("price", price);
       formData.append("discount", discount);
       formData.append("companyName", companyName);
-
       formData.append("visibility", visibility);
       formData.append("prescription_required", prescription_required);
 
       if (image) formData.append("image", image);
 
-      const {data} = await axios.post(
+      const { data } = await axios.post(
         `${API}/api/pharmacy/addProduct`,
         formData,
-        { headers: {
-          Authorization: `Bearer ${pharmacyToken}`,
-        } },
+        {
+          headers: {
+            Authorization: `Bearer ${pharmacyToken}`,
+          },
+        }
       );
 
       if (data.success) {
-        console.log("Product added successfully!");
+        toast.success("Product added successfully!"); // ✅ replaces alert()
         setName("");
         setType("");
         setProductNo("");
         setQuantityAmount("");
-        setQuantityUnit("");
+        setQuantityUnit("tablet");
         setNo_of_Product("");
         setPrice("");
         setDiscount("");
         setCompanyName("");
-        setVisibility("");
-        setPrescription_required("");
+        setVisibility("true");
+        setPrescription_required("false");
         setImage(null);
         fetchProducts();
       } else {
-        console.log(data.message);
+        toast.error(data.message || "Failed to add product."); // ✅ replaces alert(data.message)
       }
     } catch (err: any) {
-      console.log(err.response?.data?.message || "Upload failed");
+      toast.error(err.response?.data?.message || "Upload failed."); // ✅ replaces alert()
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 px-6 py-10 flex justify-center">
-      <div className="w-full max-w-4xl bg-white shadow-xl rounded-3xl p-10">
-        {/* Header */}
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-4xl bg-white shadow-xl rounded-3xl p-10"
+      >
         <h1 className="text-3xl font-semibold text-slate-800">Add Product</h1>
-        <p className="text-slate-500 mt-1 mb-8">
-          Enter product details carefully for accurate listing.
-        </p>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Name */}
-          <div>
-            <label className="label">Product Name</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Medicine Name"
-              onChange={(e) => setName(e.target.value)}
-              value={name}
-            />
-          </div>
+        <div className="grid md:grid-cols-2 gap-6 mt-8">
 
-          {/* Type */}
-          <div>
-            <label className="label">Product Type:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Type (Tablet/Syrup)"
-              onChange={(e) => setType(e.target.value)}
-              value={type}
-            />
-          </div>
+          <Input label="Product Name" value={name} set={setName}/>
+          <Input label="Type" value={type} set={setType}/>
+          <Input label="Product Number" value={productNo} set={setProductNo}/>
+          <Input label="Company Name" value={companyName} set={setCompanyName}/>
 
-          {/* Product Number */}
-          <div>
-            <label className="label">Product Number:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Product Number"
-              onChange={(e) => setProductNo(e.target.value)}
-              value={productNo}
-            />
-          </div>
+          {/* Quantity amount */}
+          <Input label="Quantity Amount" value={quantityAmount} set={setQuantityAmount}/>
 
-          {/* Company */}
-          <div>
-            <label className="label">Company Name:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Company Name"
-              onChange={(e) => setCompanyName(e.target.value)}
-              value={companyName}
-            />
-          </div>
+          {/* Quantity unit */}
+          <Select label="Quantity Unit" value={quantityUnit} set={setQuantityUnit} options={["tablet","ml","items"]}/>
 
-          {/* Quantity */}
+          <Input label="No. of Products" value={no_of_product} set={setNo_of_Product}/>
+          <Input label="Price ₹" value={price} set={setPrice}/>
+          <Input label="Discount %" value={discount} set={setDiscount}/>
+
+          <Select label="Visibility" value={visibility} set={setVisibility} bool/>
+          <Select label="Prescription Required" value={prescription_required} set={setPrescription_required} bool/>
+
+          {/* file */}
           <div className="md:col-span-2">
-            <label className="label">Quantity:</label>
-
-            <div className="flex gap-3">
-              {/* Amount */}
-              <input
-                className="input border rounded-md "
-                placeholder="Quantity Amount"
-                onChange={(e) => setQuantityAmount(e.target.value)}
-                value={quantityAmount}
-              />
-
-              {/* Unit */}
-              <select
-                className="input border rounded-md w-26"
-                onChange={(e) => setQuantityUnit(e.target.value)}
-              >
-                <option value="tablet">Tablet</option>
-                <option value="ml">ML</option>
-                <option value="items">Items</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Stock */}
-          <div>
-            <label className="label">No. of Products:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Number of Products"
-              onChange={(e) => setNo_of_Product(e.target.value)}
-              value={no_of_product}
-            />
-          </div>
-
-          {/* Price */}
-          <div>
-            <label className="label">Price ₹:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Price"
-              onChange={(e) => setPrice(e.target.value)}
-              value={price}
-            />
-          </div>
-
-          {/* Discount */}
-          <div>
-            <label className="label">Discount %:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Discount %"
-              onChange={(e) => setDiscount(e.target.value)}
-              value={discount}
-            />
-          </div>
-
-          {/* Visibility */}
-          <div>
-            <label className="label">Visibility:</label>
-            <select
-              className="input border rounded-md"
-              onChange={(e) => setVisibility(e.target.value)}
-            >
-              <option value="true">Visible</option>
-              <option value="false">Hidden</option>
-            </select>
-          </div>
-
-          {/* Prescription */}
-          <div className="md:col-span-2">
-            <label className="label">Prescription Required:</label>
-            <select
-              className="input border rounded-md"
-              onChange={(e) => setPrescription_required(e.target.value)}
-            >
-              <option value="false">No</option>
-              <option value="true">Yes</option>
-            </select>
-          </div>
-
-          {/* Image */}
-          <div className="md:col-span-2">
-            <label className="label">Product Image:</label>
+            <label className="text-sm font-medium">Image</label>
             <input
               type="file"
-              className="file border rounded-md"
-              onChange={(e) => setImage(e.target.files?.[0] || null)}
+              className="mt-1 w-full border rounded-md p-2"
+              onChange={(e)=> setImage(e.target.files?.[0] || null)}
             />
           </div>
+
         </div>
 
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          className="mt-10 w-full rounded-full bg-emerald-600 text-white py-4 text-lg font-medium hover:bg-emerald-700 transition"
-        >
+        <button className="mt-10 w-full rounded-full bg-emerald-600 text-white py-4 text-lg font-medium hover:bg-emerald-700 transition">
           Add Product
         </button>
-      </div>
+      </form>
     </div>
   );
 };
 
 export default AddProduct;
+
+
+/* reusable components */
+
+function Input({label,value,set}:{label:string,value:string,set:(v:string)=>void}) {
+  return (
+    <div>
+      <label className="text-sm font-medium">{label}</label>
+      <input
+        className="mt-1 w-full border rounded-md p-2"
+        value={value}
+        onChange={(e)=>set(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function Select({
+  label,
+  value,
+  set,
+  bool=false,
+  options=[]
+}:{
+  label:string,
+  value:string,
+  set:(v:string)=>void,
+  bool?:boolean,
+  options?:string[]
+}) {
+  return (
+    <div>
+      <label className="text-sm font-medium">{label}</label>
+      <select
+        className="mt-1 w-full border rounded-md p-2"
+        value={value}
+        onChange={(e)=>set(e.target.value)}
+      >
+        {bool ? (
+          <>
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </>
+        ) : (
+          options.map(opt=>(
+            <option key={opt} value={opt}>{opt}</option>
+          ))
+        )}
+      </select>
+    </div>
+  );
+}

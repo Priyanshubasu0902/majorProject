@@ -1,3 +1,4 @@
+// medicare/src/home.tsx
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,11 @@ import {
 import { motion } from "framer-motion";
 
 export default function MedLuxHome() {
+
+   const handleRedirect = (url: string) => {
+    window.location.href = url;
+  };
+
   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white text-slate-900">
@@ -40,7 +46,7 @@ export default function MedLuxHome() {
             Contact
           </a>
         </nav>
-        <Button className="rounded-full px-6">Log In / Sign Up</Button>
+        <Button onClick={()=>handleRedirect(import.meta.env.VITE_USER_APP_URL)} className="rounded-full px-6">Log In / Sign Up</Button>
       </header>
 
       {/* Hero */}

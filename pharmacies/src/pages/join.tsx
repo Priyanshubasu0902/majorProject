@@ -1,10 +1,12 @@
-import { useContext, useState } from "react";
+//src/pages/join.tsx
+import {  useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import {  usePharmacy } from "@/context/PharmacyContext";
+import { usePharmacy } from "@/context/PharmacyContext";
+import { toast } from "react-toastify";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -18,13 +20,15 @@ export default function PartnerAuth() {
   const [step, setStep] = useState<Step>(1);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
+  const [ownerName, setOwnerName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orgName, setorgName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [licenseNo, setLicenseNo] = useState("");
+  const [gstNo, setGstNo] = useState("");
   const [otp, setOtp] = useState("");
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [gstFile, setGstFile] = useState<File | null>(null);
@@ -37,22 +41,19 @@ export default function PartnerAuth() {
   //  Handle OTP Sending
   const handleSendOtp = async () => {
     setLoading(true);
-    setError(null);
     try {
       const { data } = await axios.post(`${API}/api/generate-otp`, {
         email,
         phone,
       });
       if (data.success) {
-        setLoading(false);
-        console.log(data.message);
+        toast.success("OTP sent to your email!");
         handleNext(); // Move to OTP step
       } else {
-        setLoading(false);
-        console.log(data.message);
+        toast.error(data.message || "Failed to send OTP.");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to send OTP");
+      toast.error(err.response?.data?.message || "Failed to send OTP.");
     } finally {
       setLoading(false);
     }
@@ -61,22 +62,19 @@ export default function PartnerAuth() {
   // Handle OTP Verification
   const handleVerifyOtp = async () => {
     setLoading(true);
-    setError(null);
     try {
       const { data } = await axios.post(`${API}/api/verify-otp`, {
         email,
         otp,
       });
       if (data.success) {
-        setLoading(false);
-        console.log(data.message);
+        toast.success("Email verified successfully!");
         handleNext(); // Move to document upload step
       } else {
-        setLoading(false);
-        console.log(data.message);
+        toast.error(data.message || "Invalid OTP. Try again.");
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid OTP. Try again.");
+      toast.error(err.response?.data?.message || "Invalid OTP. Try again.");
     } finally {
       setLoading(false);
     }
@@ -92,10 +90,13 @@ export default function PartnerAuth() {
       const formDataToSend = new FormData();
 
       formDataToSend.append("name", orgName);
+      formDataToSend.append("ownerName", ownerName);
       formDataToSend.append("email", email);
       formDataToSend.append("password", password);
       formDataToSend.append("number", phone);
       formDataToSend.append("address", address);
+      formDataToSend.append("licenseNumber", licenseNo);
+      formDataToSend.append("gstNumber", gstNo);
 
       if (licenseFile) {
         formDataToSend.append("licenseFile", licenseFile);
@@ -108,77 +109,66 @@ export default function PartnerAuth() {
       }
       const { data } = await axios.post(
         `${API}/api/pharmacy/signUp`,
-        formDataToSend
+        formDataToSend,
       );
 
       if (data.success) {
-        localStorage.setItem("pharmacytoken", data.token);
-        setPharmacyToken(data.token);
-        console.log(data.message);
-        // toast.success("Application submitted");
+        toast.success("Application submitted! Awaiting approval.");
+        localStorage.setItem("pharmacyToken", data.token);
+        // setPharmacyToken(data.token);
+        setEmail("");
+        setPassword("");
+        setOwnerName("");
+        setorgName("");
+        setAddress("");
+        setPhone("");
+        setGstNo("");
+        setLicenseNo("");
+        setGstFile(null);
+        setLicenseFile(null);
+        setNablFile(null);
+        setOtp("");
         setStep(4);
       } else {
-        // toast.error(data.message);
-        console.log(data.message);
+        toast.error(data.message || "Registration failed.");
       }
-      setLoading(false);
     } catch (error: any) {
+      toast.error(error.response?.data?.message || "Registration failed.");
+    } finally {
       setLoading(false);
-      console.log(error);
-      // toast.error(
-      //   error.response?.data?.message || "Registration failed"
-      // );
     }
   };
 
   const onLoginHandler = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    setLoading(true);
-    setError(null);
+    try {
+      setLoading(true);
 
-    const { data } = await axios.post(`${API}/api/pharmacy/login`, {
-      email,
-      password,
-      number: ''
-    });
+      const { data } = await axios.post(`${API}/api/pharmacy/login`, {
+        email,
+        password,
+        number: "",
+      });
 
-    if (data.success) {
-      localStorage.setItem("pharmacyToken", data.token);
-      localStorage.setItem("partnerRole", data.role);
-      setPharmacyToken(data.token);
-      setRole(data.role);
-
-      // toast.success("Login successful");
-       console.log("login successfull")
-      // Role-based redirect
-      // if (data.role === "pharmacy") {
-      //   navigate("/dashboard");
-      // } else if (data.role === "lab") {
-      //   navigate("/lab/dashboard");
-      // } else if (data.role === "doctor") {
-      //   navigate("/doctor/dashboard");
-      // } else {
-      //   navigate("/");
-      // }
-      navigate("/dashboard");
-    } else {
-      // toast.error(data.message);
-      console.log(data.message);
+      if (data.success) {
+        toast.success("Login successful!");
+        localStorage.setItem("pharmacyToken", data.token);
+        localStorage.setItem("partnerRole", data.role);
+        setPharmacyToken(data.token);
+        setRole(data.role);
+        navigate("/dashboard", { replace: true });
+      } else {
+        toast.error(data.message || "Invalid credentials.");
+      }
+    } catch (error: any) {
+      setLoading(false);
+      console.log(error);
+      toast.error(
+        error.response?.data?.message || "Login failed"
+      );
     }
-
-    setLoading(false);
-    // console.log(email);
-    // console.log(password);
-  } catch (error: any) {
-    setLoading(false);
-    console.log(error);
-    // toast.error(
-    //   error.response?.data?.message || "Login failed"
-    // );
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white px-6">
@@ -219,11 +209,6 @@ export default function PartnerAuth() {
             </button>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <p className="text-red-500 text-sm text-center mb-2">{error}</p>
-          )}
-
           {/* LOGIN */}
           {mode === "login" && (
             <div className="space-y-5">
@@ -259,6 +244,11 @@ export default function PartnerAuth() {
                     placeholder="Organization Name"
                     value={orgName}
                     onChange={(e) => setorgName(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Owner Name"
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
                   />
                   <Input
                     placeholder="Business Email"
@@ -318,27 +308,41 @@ export default function PartnerAuth() {
                   </p>
 
                   {/* License */}
+                  <p className="text-xs text-slate-400">License Number</p>
+                  <Input
+                    type="text"
+                    placeholder="License Number"
+                    onChange={(e) => setLicenseNo(e.target.value)}
+                    value={licenseNo}
+                  />
+                  <p className="text-xs text-slate-400">License Certificate</p>
                   <Input
                     type="file"
                     onChange={(e) =>
                       setLicenseFile(e.target.files?.[0] || null)
                     }
                   />
-                  <p className="text-xs text-slate-400">License Certificate</p>
 
                   {/* GST */}
+                  <p className="text-xs text-slate-400">GST Number</p>
+                  <Input
+                    type="text"
+                    placeholder="GST Number"
+                    onChange={(e) => setGstNo(e.target.value)}
+                    value={gstNo}
+                  />
+                  <p className="text-xs text-slate-400">GST Certificate</p>
                   <Input
                     type="file"
                     onChange={(e) => setGstFile(e.target.files?.[0] || null)}
                   />
-                  <p className="text-xs text-slate-400">GST Certificate</p>
 
                   {/* NABL */}
+                  <p className="text-xs text-slate-400">NABL Certificate</p>
                   <Input
                     type="file"
                     onChange={(e) => setNablFile(e.target.files?.[0] || null)}
                   />
-                  <p className="text-xs text-slate-400">NABL Certificate</p>
 
                   <Button
                     className="w-full rounded-full py-6 cursor-pointer"

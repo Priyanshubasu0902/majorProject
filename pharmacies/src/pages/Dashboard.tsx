@@ -1,10 +1,19 @@
+// src/pages/Dashboard.tsx
 import React, { useEffect } from "react";
 import Footer from "../components/Footer";
 import {  usePharmacy } from "@/context/PharmacyContext";
 
 const Dashboard = () => {
 
-  const { products } = usePharmacy();
+  const { orders, products } = usePharmacy();
+
+  // Summary counts
+  const counts = {
+    total:     orders.length,
+    completed: orders.filter(o => ["completed", "delivered", "picked_up"].includes(o.currentStatus)).length,
+    pending:   orders.filter(o => ["pending", "confirmed", "preparing"].includes(o.currentStatus)).length,
+    cancelled: orders.filter(o => o.currentStatus === "cancelled").length,
+  };
 
   return (
     <>
@@ -24,10 +33,10 @@ const Dashboard = () => {
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
-            <DashboardCard title="Total Products" value={products.length} />
-            <DashboardCard title="Active Orders" value="6" />
-            <DashboardCard title="Completed Orders" value="128" />
-            <DashboardCard title="Canceled Orders" value="20" />
+            <DashboardCard title="Total Products" value={products?.length||'0'} />
+            <DashboardCard title="Active Orders" value={counts.pending} />
+            <DashboardCard title="Completed Orders" value={counts.completed} />
+            <DashboardCard title="Canceled Orders" value={counts.cancelled} />
           </div>
 
         </main>

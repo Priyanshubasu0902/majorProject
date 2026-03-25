@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import {  useLab } from "@/context/LabContext";
+import { useLab } from "@/context/LabContext";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -20,11 +20,14 @@ export default function PartnerAuth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [ownerName, setOwnerName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orgName, setorgName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [licenseNo, setLicenseNo] = useState("");
+  const [gstNo, setGstNo] = useState("");
   const [otp, setOtp] = useState("");
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [gstFile, setGstFile] = useState<File | null>(null);
@@ -92,10 +95,13 @@ export default function PartnerAuth() {
       const formDataToSend = new FormData();
 
       formDataToSend.append("name", orgName);
+      formDataToSend.append("ownerName", ownerName);
       formDataToSend.append("email", email);
       formDataToSend.append("password", password);
       formDataToSend.append("number", phone);
       formDataToSend.append("address", address);
+      formDataToSend.append("licenseNumber", licenseNo);
+      formDataToSend.append("gstNumber", gstNo);
 
       if (licenseFile) {
         formDataToSend.append("licenseFile", licenseFile);
@@ -107,15 +113,27 @@ export default function PartnerAuth() {
         formDataToSend.append("nablFile", nablFile);
       }
       const { data } = await axios.post(
-        `${API}/api/pharmacy/signUp`,
-        formDataToSend
+        `${API}/api/lab/signUp`,
+        formDataToSend,
       );
 
       if (data.success) {
-        localStorage.setItem("labtoken", data.token);
-        setLabToken(data.token);
+        localStorage.setItem("labToken", data.token);
+        // setLabToken(data.token);
         console.log(data.message);
         // toast.success("Application submitted");
+        setEmail("");
+        setPassword("");
+        setOwnerName("");
+        setorgName("");
+        setAddress("");
+        setPhone("");
+        setGstNo("");
+        setLicenseNo("");
+        setGstFile(null);
+        setLicenseFile(null);
+        setNablFile(null);
+        setOtp("");
         setStep(4);
       } else {
         // toast.error(data.message);
@@ -132,53 +150,53 @@ export default function PartnerAuth() {
   };
 
   const onLoginHandler = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    setLoading(true);
-    setError(null);
+    try {
+      setLoading(true);
+      setError(null);
 
-    const { data } = await axios.post(`${API}/api/pharmacy/login`, {
-      email,
-      password,
-      number: ''
-    });
+      const { data } = await axios.post(`${API}/api/lab/login`, {
+        email,
+        password,
+        number: "",
+      });
 
-    if (data.success) {
-      localStorage.setItem("labToken", data.token);
-      localStorage.setItem("partnerRole", data.role);
-      setLabToken(data.token);
-      setRole(data.role);
+      if (data.success) {
+        localStorage.setItem("labToken", data.token);
+        localStorage.setItem("partnerRole", data.role);
+        setLabToken(data.token);
+        setRole(data.role);
 
-      // toast.success("Login successful");
-       console.log("login successfull")
-      // Role-based redirect
-      // if (data.role === "pharmacy") {
-      //   navigate("/dashboard");
-      // } else if (data.role === "lab") {
-      //   navigate("/lab/dashboard");
-      // } else if (data.role === "doctor") {
-      //   navigate("/doctor/dashboard");
-      // } else {
-      //   navigate("/");
-      // }
-      navigate("/dashboard");
-    } else {
-      // toast.error(data.message);
-      console.log(data.message);
+        // toast.success("Login successful");
+        console.log("login successfull");
+        // Role-based redirect
+        // if (data.role === "pharmacy") {
+        //   navigate("/dashboard");
+        // } else if (data.role === "lab") {
+        //   navigate("/lab/dashboard");
+        // } else if (data.role === "doctor") {
+        //   navigate("/doctor/dashboard");
+        // } else {
+        //   navigate("/");
+        // }
+        navigate("/dashboard");
+      } else {
+        // toast.error(data.message);
+        console.log(data.message);
+      }
+
+      setLoading(false);
+      // console.log(email);
+      // console.log(password);
+    } catch (error: any) {
+      setLoading(false);
+      console.log(error);
+      // toast.error(
+      //   error.response?.data?.message || "Login failed"
+      // );
     }
-
-    setLoading(false);
-    // console.log(email);
-    // console.log(password);
-  } catch (error: any) {
-    setLoading(false);
-    console.log(error);
-    // toast.error(
-    //   error.response?.data?.message || "Login failed"
-    // );
-  }
-};
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white px-6">
@@ -261,6 +279,11 @@ export default function PartnerAuth() {
                     onChange={(e) => setorgName(e.target.value)}
                   />
                   <Input
+                    placeholder="Owner Name"
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
+                  />
+                  <Input
                     placeholder="Business Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -318,22 +341,40 @@ export default function PartnerAuth() {
                   </p>
 
                   {/* License */}
+                  <p className="text-xs text-slate-400">License Number</p>
+                  <Input type="text"
+                  placeholder="License Number"
+                  onChange={(e)=>setLicenseNo(e.target.value)}
+                  value={licenseNo}
+                  />
+                    <p className="text-xs text-slate-400">License Certificate</p>
                   <Input
                     type="file"
                     onChange={(e) =>
                       setLicenseFile(e.target.files?.[0] || null)
                     }
                   />
-                  <p className="text-xs text-slate-400">License Certificate</p>
 
                   {/* GST */}
+                  <p className="text-xs text-slate-400">GST Number</p>
+                  <Input type="text"
+                  placeholder="GST Number"
+                  onChange={(e)=>setGstNo(e.target.value)}
+                  value={gstNo}
+                  />
+                    <p className="text-xs text-slate-400">GST Certificate</p>
                   <Input
                     type="file"
                     onChange={(e) => setGstFile(e.target.files?.[0] || null)}
                   />
-                  <p className="text-xs text-slate-400">GST Certificate</p>
 
-    
+                  {/* NABL */}
+                  <p className="text-xs text-slate-400">NABL Certificate</p>
+                  <Input
+                    type="file"
+                    onChange={(e) => setNablFile(e.target.files?.[0] || null)}
+                  />
+
                   <Button
                     className="w-full rounded-full py-6 cursor-pointer"
                     onClick={onSubmitHandler}

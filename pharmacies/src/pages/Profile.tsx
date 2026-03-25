@@ -1,3 +1,4 @@
+// src/pages/Profile.tsx
 import React from "react";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -36,7 +37,7 @@ const Profile = () => {
 
             <div className="grid md:grid-cols-2 gap-6 text-sm">
               <ProfileItem label="Pharmacy Name" value={pharmacyData?.name} />
-              <ProfileItem label="Owner Name" value="Nandini Das" />
+              <ProfileItem label="Owner Name" value={pharmacyData?.ownerName} />
               <ProfileItem
                 label="License Number"
                 value={pharmacyData?.licenseNumber}
@@ -46,7 +47,10 @@ const Profile = () => {
                 label="Verification Status"
                 value={pharmacyData?.isApproved ? "Approved" : "Not Approved"}
               />
-              <ProfileItem label="Contact Number" value={pharmacyData?.number} />
+              <ProfileItem
+                label="Contact Number"
+                value={pharmacyData?.number}
+              />
               <ProfileItem label="Email Address" value={pharmacyData?.email} />
               <ProfileItem label="Address" value={pharmacyData?.address} full />
             </div>
@@ -63,10 +67,9 @@ const Profile = () => {
             <div className="overflow-hidden rounded-2xl border border-slate-200">
               <iframe
                 title="Pharmacy Location"
-                src="https://www.google.com/maps?q=BTM+Layout+Bangalore&output=embed"
+                src={`https://www.google.com/maps?q=${pharmacyData.location.coordinates[1]},${pharmacyData.location.coordinates[0]}&z=15&output=embed`}
                 className="w-full h-64"
                 loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
 

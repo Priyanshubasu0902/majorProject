@@ -4,190 +4,181 @@ import { useLab } from "@/context/LabContext";
 
 const API = import.meta.env.VITE_BACKEND_URL;
 
-const AddProduct = () => {
-  const { labToken } = useLab();
-  
+const AddTest = () => {
+  const { labToken, fetchTests } = useLab();
+
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [outcome, setOutcome] = useState("");
   const [type, setType] = useState("");
-  const [TestNo, setTestNo] = useState("");
-  const [no_of_Test, setNo_of_Test] = useState("");
+  const [serviceNo, setServiceNo] = useState("");
+  const [requirement, setRequirement] = useState("");
   const [price, setPrice] = useState("");
   const [discount, setDiscount] = useState("");
-  const [companyName, setCompanyName] = useState("");
+  const [testDurationValue, setTestDurationValue] = useState("");
+  const [testDurationUnit, setTestDurationUnit] = useState("hours");
+  const [resultDurationValue, setResultDurationValue] = useState("");
+  const [resultDurationUnit, setResultDurationUnit] = useState("hours");
+  const [visitLab, setVisitLab] = useState("false");
+  const [caution, setCaution] = useState("");
   const [visibility, setVisibility] = useState("true");
-  const [prescription_required, setPrescription_required] = useState("false");
   const [image, setImage] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
       const formData = new FormData();
 
       formData.append("name", name);
+      formData.append("description", description);
+      formData.append("outcome", outcome);
       formData.append("type", type);
-      formData.append("TestNo", TestNo);
-
-
-      formData.append("no_of_Test", no_of_Test);
+      formData.append("serviceNo", serviceNo);
+      formData.append("requirement", requirement);
       formData.append("price", price);
       formData.append("discount", discount);
-      formData.append("companyName", companyName);
 
+      // nested objects
+      formData.append("duration_of_test[value]", testDurationValue);
+      formData.append("duration_of_test[unit]", testDurationUnit);
+
+      formData.append("duration_of_result[value]", resultDurationValue);
+      formData.append("duration_of_result[unit]", resultDurationUnit);
+
+      formData.append("visitLab", visitLab);
+      formData.append("caution", caution);
       formData.append("visibility", visibility);
-      formData.append("prescription_required", prescription_required);
 
       if (image) formData.append("image", image);
 
-      const {data} = await axios.post(
+      const { data } = await axios.post(
         `${API}/api/lab/addTest`,
         formData,
-        { headers: {
-          Authorization: `Bearer ${labToken}`,
-        } },
+        {
+          headers: {
+            Authorization: `Bearer ${labToken}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
       if (data.success) {
-        console.log("Product added successfully!");
+        alert("Service Added Successfully");
+
+        // reset form
         setName("");
+        setDescription("");
+        setOutcome("");
         setType("");
-        setTestNo("");
-        setNo_of_Test("");
+        setServiceNo("");
+        setRequirement("");
         setPrice("");
         setDiscount("");
-        setCompanyName("");
-        setVisibility("");
-        setPrescription_required("");
+        setTestDurationValue("");
+        setResultDurationValue("");
+        setCaution("");
         setImage(null);
+        fetchTests();
       } else {
-        console.log(data.message);
+        alert(data.message);
       }
     } catch (err: any) {
-      console.log(err.response?.data?.message || "Upload failed");
+      alert(err.response?.data?.message || "Upload failed");
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 px-6 py-10 flex justify-center">
-      <div className="w-full max-w-4xl bg-white shadow-xl rounded-3xl p-10">
-        {/* Header */}
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-4xl bg-white shadow-xl rounded-3xl p-10"
+      >
         <h1 className="text-3xl font-semibold text-slate-800">Add Test</h1>
-        <p className="text-slate-500 mt-1 mb-8">
-          Enter test details carefully for accurate listing.
-        </p>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Name */}
-          <div>
-            <label className="label">Test Name</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Test Name"
-              onChange={(e) => setName(e.target.value)}
-              value={name}
-            />
-          </div>
+        <div className="grid md:grid-cols-2 gap-6 mt-8">
 
-          {/* Type */}
-          <div>
-            <label className="label">Test Type:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Type (before having food/after having food)"
-              onChange={(e) => setType(e.target.value)}
-              value={type}
-            />
-          </div>
+          <Input label="Name" value={name} set={setName}/>
+          <Input label="Description" value={description} set={setDescription}/>
+          <Input label="Outcome" value={outcome} set={setOutcome}/>
+          <Input label="Type" value={type} set={setType}/>
+          <Input label="Service No" value={serviceNo} set={setServiceNo}/>
+          <Input label="Requirement" value={requirement} set={setRequirement}/>
+          <Input label="Price ₹" value={price} set={setPrice}/>
+          <Input label="Discount %" value={discount} set={setDiscount}/>
 
-          {/* Test Number */}
-          <div>
-            <label className="label">Test Number:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Test Number"
-              onChange={(e) => setTestNo(e.target.value)}
-              value={no_of_Test}
-            />
-          </div>
+          {/* duration test */}
+          <Input label="Test Duration Value" value={testDurationValue} set={setTestDurationValue}/>
+          <Select label="Test Duration Unit" value={testDurationUnit} set={setTestDurationUnit}/>
 
-          {/* Company */}
-          <div>
-            <label className="label">Company Name:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Company Name"
-              onChange={(e) => setCompanyName(e.target.value)}
-              value={companyName}
-            />
-          </div>
-1
+          {/* duration result */}
+          <Input label="Result Duration Value" value={resultDurationValue} set={setResultDurationValue}/>
+          <Select label="Result Duration Unit" value={resultDurationUnit} set={setResultDurationUnit}/>
 
-          {/* Price */}
-          <div>
-            <label className="label">Price ₹:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Price"
-              onChange={(e) => setPrice(e.target.value)}
-              value={price}
-            />
-          </div>
+          {/* booleans */}
+          <Select label="Visit Lab" value={visitLab} set={setVisitLab} bool/>
+          <Select label="Visibility" value={visibility} set={setVisibility} bool/>
 
-          {/* Discount */}
-          <div>
-            <label className="label">Discount %:</label>
-            <input
-              className="input border rounded-md"
-              placeholder="Discount %"
-              onChange={(e) => setDiscount(e.target.value)}
-              value={discount}
-            />
-          </div>
+          <Input label="Caution" value={caution} set={setCaution}/>
 
-          {/* Visibility */}
-          <div>
-            <label className="label">Visibility:</label>
-            <select
-              className="input border rounded-md"
-              onChange={(e) => setVisibility(e.target.value)}
-            >
-              <option value="true">Visible</option>
-              <option value="false">Hidden</option>
-            </select>
-          </div>
-
-          {/* Prescription */}
+          {/* file */}
           <div className="md:col-span-2">
-            <label className="label">Prescription Required:</label>
-            <select
-              className="input border rounded-md"
-              onChange={(e) => setPrescription_required(e.target.value)}
-            >
-              <option value="false">No</option>
-              <option value="true">Yes</option>
-            </select>
-          </div>
-
-          {/* Image */}
-          <div className="md:col-span-2">
-            <label className="label">Product Image:</label>
+            <label className="text-sm font-medium">Image</label>
             <input
               type="file"
-              className="file border rounded-md"
-              onChange={(e) => setImage(e.target.files?.[0] || null)}
+              className="mt-1 w-full border rounded-md p-2"
+              onChange={(e)=> setImage(e.target.files?.[0] || null)}
             />
           </div>
         </div>
 
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          className="mt-10 w-full rounded-full bg-emerald-600 text-white py-4 text-lg font-medium hover:bg-emerald-700 transition"
-        >
-          Add Product
+        <button className="mt-10 w-full rounded-full bg-emerald-600 text-white py-4 text-lg font-medium hover:bg-emerald-700 transition">
+          Add Service
         </button>
-      </div>
+      </form>
     </div>
   );
 };
 
-export default AddProduct;
+export default AddTest;
+
+/* reusable components */
+
+function Input({label,value,set}:{label:string,value:string,set:(v:string)=>void}) {
+  return (
+    <div>
+      <label className="text-sm font-medium">{label}</label>
+      <input
+        className="mt-1 w-full border rounded-md p-2"
+        value={value}
+        onChange={(e)=>set(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function Select({label,value,set,bool=false}:{label:string,value:string,set:(v:string)=>void,bool?:boolean}) {
+  return (
+    <div>
+      <label className="text-sm font-medium">{label}</label>
+      <select
+        className="mt-1 w-full border rounded-md p-2"
+        value={value}
+        onChange={(e)=>set(e.target.value)}
+      >
+        {bool ? (
+          <>
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </>
+        ) : (
+          <>
+            <option value="hours">hours</option>
+            <option value="minutes">minutes</option>
+            <option value="seconds">seconds</option>
+          </>
+        )}
+      </select>
+    </div>
+  );
+}

@@ -1,3 +1,4 @@
+// medicare/src/lab/businessType.tsx
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function BusinessType() {
@@ -33,7 +34,7 @@ export default function BusinessType() {
           {/* DIAGNOSTIC LAB */}
           <Card
             onClick={() =>
-  handleRedirect(import.meta.env.VITE_PHARMACY_APP_URL)
+  handleRedirect(import.meta.env.VITE_LAB_APP_URL)
             }
             className="cursor-pointer rounded-3xl border hover:shadow-xl transition"
           >

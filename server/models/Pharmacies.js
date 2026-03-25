@@ -10,6 +10,10 @@ const pharmacySchema = mongoose.Schema({
     min: 1000000000,
     max: 9999999999,
   },
+  ownerName: {
+    type: String,
+    required: true,
+  },
   password: { type: String, required: true },
   // address: {
   //   line1: {type: String},
@@ -22,6 +26,10 @@ const pharmacySchema = mongoose.Schema({
   address: {
     type: String,
     required: true,
+  },
+  location:{
+    type:{ type:String, enum:["Point"], default:"Point" },
+    coordinates:{ type:[Number], required:true }
   },
   isApproved: {
     type: Boolean,
@@ -58,6 +66,8 @@ const pharmacySchema = mongoose.Schema({
     required: true,
   },
 });
+
+pharmacySchema.index({ location:"2dsphere" });
 
 const pharmacy = mongoose.model("pharmacy", pharmacySchema);
 

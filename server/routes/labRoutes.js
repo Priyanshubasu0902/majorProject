@@ -1,5 +1,5 @@
 import express from "express";
-import { addService, changeVisibility, deleteLab, editLab, getLab, getService, getServices, loginLab, removeService, setPassword, signUpLab } from "../controllers/labController.js";
+import { addService, changeVisibility, createOrder, deleteLab, editLab, getLab, getService, getServices, loginLab, removeService, setPassword, signUpLab, viewOrders } from "../controllers/labController.js";
 import { isLabLoggedIn } from "../middlewares/isLoggedIn.js";
 import upload from "../config/multer.js";
 
@@ -28,18 +28,22 @@ router.get("/deleteLab", isLabLoggedIn, deleteLab);
 router.post('/setPassword', isLabLoggedIn, setPassword);
 
 // Add Services
-router.post('/addService', isLabLoggedIn, upload.single('image'), addService);
+router.post('/addTest', isLabLoggedIn, upload.single('image'), addService);
 
 // Get Services
-router.get("/services" , isLabLoggedIn, getServices);
+router.get("/tests" , isLabLoggedIn, getServices);
 
 // Get a particular particular service
-router.get('/service/:id', isLabLoggedIn, getService);
+router.get('/test/:id', isLabLoggedIn, getService);
 
 // Delete a particular service
-router.get('/removeService/:id', isLabLoggedIn, removeService);
+router.get('/removeTest/:id', isLabLoggedIn, removeService);
 
 // Change Visibility of a particular service
-router.post('/changeServiceVisibility/:id', isLabLoggedIn, changeVisibility);
+router.get('/changeTestVisibility/:id', isLabLoggedIn, changeVisibility);
+
+router.post('/createOrder', isLabLoggedIn, createOrder);
+
+router.get('/orders', isLabLoggedIn, viewOrders);
 
 export default router;

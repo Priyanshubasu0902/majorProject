@@ -3,10 +3,22 @@ import { v2 as cloudinary } from "cloudinary";
 import pharmacyModel from "../models/Pharmacies.js";
 import generateToken from "../utils/generateToken.js";
 import pharmacyProductModel from "../models/PharmacyProduct.js";
+import pharmacyOrderModel from "../models/PharmacyOrders.js";
+import { geocodeAddress } from "../utils/geocode.js";
+import { pharmacyOrderNo } from "../utils/generateOrderNumber.js";
+import mongoose from "mongoose";
 
 export const signUpPharmacy = async (req, res) => {
-  const { name, email, number, password, address, gstNumber, licenseNumber } =
-    req.body;
+  const {
+    name,
+    email,
+    number,
+    ownerName,
+    password,
+    address,
+    gstNumber,
+    licenseNumber,
+  } = req.body;
 
   const gst = req.files.gstFile[0];
   const license = req.files.licenseFile[0];
@@ -16,6 +28,7 @@ export const signUpPharmacy = async (req, res) => {
     name === "" ||
     email === "" ||
     number === "" ||
+    ownerName === "" ||
     password === "" ||
     address === "" ||
     gstNumber === "" ||
@@ -45,13 +58,21 @@ export const signUpPharmacy = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
+    const coords = await geocodeAddress(address);
+
     const pharmacy = await pharmacyModel.create({
       name,
       number,
+      ownerName,
       password: hashPassword,
       email,
       address,
+      location: {
+        type: "Point",
+        coordinates: [coords.lng, coords.lat],
+      },
       licenseNumber,
+      isApproved: true,
       gstNumber,
       licenseFile: licenseFileUpload.secure_url,
       gstFile: gstFileUpload.secure_url,
@@ -179,7 +200,8 @@ export const addProduct = async (req, res) => {
       price === "" ||
       discount === "" ||
       productNo === "" ||
-      (!quantity?.amount || !quantity?.unit) ||
+      !quantity?.amount ||
+      !quantity?.unit ||
       no_of_Product === "" ||
       !image
     ) {
@@ -285,7 +307,7 @@ export const decrementQuantity = async (req, res) => {
 
 export const removeProduct = async (req, res) => {
   try {
-    const user = req.pharamacy;
+    const user = req.pharmacy;
     const product = await pharmacyProductModel.findOneAndDelete({
       pharmacyId: user._id,
       _id: req.params.id,
@@ -301,12 +323,23 @@ export const removeProduct = async (req, res) => {
 
 export const changeVisibility = async (req, res) => {
   try {
-    const { visibility } = req.body;
-    const user = req.pharamacy;
-    const product = await pharmacyProductModel.findOneAndUpdate(
-      { pharmacyId: user._id, _id: req.params.id },
-      { visibility },
-    );
+    const user = req.pharmacy;
+    const product = await pharmacyProductModel.findOne({
+      pharmacyId: user._id,
+      _id: req.params.id,
+    });
+
+    if (!product) {
+      return res.json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    product.visibility = !product.visibility;
+
+    await product.save();
+
     res.json({
       success: true,
       message: "Product Visibility Changed Successfully",
@@ -316,8 +349,234 @@ export const changeVisibility = async (req, res) => {
   }
 };
 
-export const viewOrders = async (req, res) => {};
+export const createOrder = async (req, res) => {
+  try {
+    const user = req.pharmacy;
+    const {
+      customer, // {name, phone, email}
+      items, // {medicineId, quantity, prescriptionVerified}
+      prescription, // {verified}
+      payment, // {method, status, transactionId}
+      notes, // {fromUser, fromShopkeeper}
+    } = req.body;
+
+    // ── 1. Basic validation ──────────────────────────────
+    if (!items || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Order must have at least one item.",
+      });
+    }
+    if (!payment?.method) {
+      return res
+        .status(400)
+        .json({ success: false, message: "payment.method is required." });
+    }
+
+    // ── 2. Validate each item and compute pricing ────────
+    const validPaymentMethods = [
+      "upi",
+      "card",
+      "netbanking",
+      "cash",
+      "cod",
+      "wallet",
+    ];
+
+    if (!validPaymentMethods.includes(payment.method)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid payment method: ${payment.method}`,
+      });
+    }
+
+    let itemsTotal = 0;
+    let prescriptionRequired = false;
+
+    const processedItems = await Promise.all(
+      items.map(async (item, index) => {
+        if (!item.medicineId) {
+          throw new Error(`Item at index ${index} is missing medicineId.`);
+        }
+        if (!item.quantity || item.quantity <= 0) {
+          throw new Error(`Item at index ${index} has invalid quantity.`);
+        }
+
+        const product = await pharmacyProductModel.findOne({
+          _id: item.medicineId,
+        });
+
+        if (!product) {
+          throw new Error(`Product at index ${index} not found.`);
+        }
+        if (product.no_of_Product < item.quantity) {
+          throw new Error(`Insufficient stock for "${product.name}".`);
+        }
+
+        // Prescription check — if item requires Rx but shopkeeper hasn't verified, warn
+        if (product.prescription_required && !item.prescriptionVerified) {
+          throw new Error(
+            `Prescription not verified for "${product.name}". Cannot dispense.`,
+          );
+        }
+
+        product.no_of_Product = product.no_of_Product - item.quantity;
+        await product.save();
+
+        const discount = (product.price * product.discount) / 100;
+        const subtotal = (product.price - discount) * item.quantity;
+        itemsTotal += subtotal;
+
+        if (product.prescription_required) {
+          prescriptionRequired = true;
+        }
+
+        return {
+          medicineId: new mongoose.Types.ObjectId(item.medicineId),
+          name: product.name,
+          brand: product.companyName,
+          // sku: item.sku ?? "",
+          quantity: item.quantity,
+          unitPrice: product.price,
+          // mrp: item.mrp ?? item.unitPrice,
+          discount: product.discount,
+          subtotal,
+          requiresPrescription: product.prescription_required,
+          prescriptionVerified: item.prescriptionVerified ?? false,
+          // batchNumber: product.batchNumber ?? "",
+          // expiryDate: product.expiryDate ? new Date(item.expiryDate) : null,
+        };
+      }),
+    );
+
+    const deliveryFee = 0;
+    const packagingFee = 0;
+    const grandTotal = itemsTotal;
+
+    const orderNumber = await pharmacyOrderNo(user, "instore");
+
+    const now = new Date();
+
+    const order = await pharmacyOrderModel.create({
+      _id: new mongoose.Types.ObjectId(),
+      orderNumber,
+      createdAt: now,
+      updatedAt: now,
+
+      // Instore order placed by shopkeeper at counter
+      // placedBy: {
+      //   type: "shopkeeper",
+      //   shopkeeperId: new mongoose.Types.ObjectId(shopkeeperId),
+      // },
+      channel: "instore",
+      orderType: "inshop",
+
+      customer: {
+        userId: null,
+        name: customer.name ?? "Walk-in Customer",
+        phone: customer.phone ?? "",
+        email: customer.email ?? "",
+        isWalkIn: true,
+      },
+
+      pharmacy: {
+        pharmacyId: new mongoose.Types.ObjectId(user._id),
+        name: user.name,
+        address: user.address,
+        number: user.number ?? "",
+        email: user.email ?? "",
+      },
+
+      // No delivery or pickup blocks needed for inshop
+      delivery: null,
+      pickup: null,
+
+      items: processedItems,
+
+      prescription: {
+        required: prescriptionRequired,
+        verified: prescription?.verified ?? false,
+        verifiedAt: now,
+        documents: null,
+      },
+
+      pricing: {
+        itemsTotal,
+        deliveryFee,
+        packagingFee,
+        grandTotal,
+      },
+
+      payment: {
+        status: payment.status,
+        method: payment.method,
+        paidAt: now,
+        transactionId: payment.transactionId ?? "",
+        gatewayOrderId: null,
+        refundId: null,
+        refundedAt: null,
+        refundAmount: null,
+      },
+
+      // Instore orders are immediately completed once shopkeeper creates them
+      currentStatus: "completed",
+
+      statusHistory: [
+        {
+          status: "completed",
+          timestamp: now,
+          updatedBy: "shopkeeper",
+          note: "Instore order created and completed by shopkeeper.",
+          userAction: null,
+        },
+      ],
+
+      cancellation: {
+        status: "none",
+        cancelledAt: null,
+        cancelledBy: null,
+        userRequest: {
+          requestedAt: null,
+          reason: null,
+          refundEligible: false,
+        },
+      },
+
+      notes: {
+        fromUser: notes?.fromUser ?? "",
+        fromShopkeeper: notes?.fromShopkeeper ?? "",
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Order Created",
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: error.message || "Failed to create order",
+    });
+  }
+};
 
 export const updateOrderStatus = async (req, res) => {};
 
-export const placeOrder = async (req, res) => {};
+export const viewOrders = async (req, res) => {
+  const user = req.pharmacy;
+
+  try {
+    const orders = await pharmacyOrderModel.find({'pharmacy.pharmacyId': user._id});
+
+    res.json({
+      success: true,
+      orders
+    })
+
+  } catch (error) {
+    res.json({
+      success: false,
+      message: error.message || "Failed to fetch orders"
+    })
+  }
+};

@@ -10,6 +10,10 @@ const labSchema = mongoose.Schema({
     min: 1000000000,
     max: 9999999999,
   },
+  ownerName: {
+    type: String,
+    required: true,
+  },
   image: { type: String },
   password: { type: String, required: true },
   // address: {
@@ -21,6 +25,10 @@ const labSchema = mongoose.Schema({
   //   pincode: {type: Number, required: true},
   // },
   address: {type: String, required: true},
+  location:{
+    type:{ type:String, enum:["Point"], default:"Point" },
+    coordinates:{ type:[Number], required:true }
+  },
   isApproved: {
     type: Boolean,
     default: false,
@@ -50,6 +58,8 @@ const labSchema = mongoose.Schema({
     required: true,
   },
 });
+
+labSchema.index({ location:"2dsphere" });
 
 const lab = mongoose.model("lab", labSchema);
 

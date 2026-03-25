@@ -4,18 +4,7 @@ import { Button } from "../components/ui/button";
 import { useLab } from "@/context/LabContext";
 
 const ViewTests = () => {
-  const {
-    tests,
-    fetchTests,
-    // deleteProduct,
-    // toggleVisibility,
-    // incrementStock,
-    // decrementStock,
-  } = useLab();
-
-  useEffect(() => {
-    fetchTests();
-  }, []);
+  const { tests, deleteTest, changeVisibility } = useLab();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 px-12 py-10">
@@ -37,7 +26,7 @@ const ViewTests = () => {
             key={test._id}
             className="rounded-3xl border border-slate-100 shadow-md hover:shadow-xl transition"
           >
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 flex flex-col h-full">
 
               {/* Title */}
               <div className="flex justify-between items-start">
@@ -45,9 +34,13 @@ const ViewTests = () => {
                   {test.name}
                 </h2>
 
-                {test.prescription_required && (
-                  <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600">
-                    Rx Required
+                {test.visibility ? (
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                    Visible
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-medium text-gray-600">
+                    Hidden
                   </span>
                 )}
               </div>
@@ -63,29 +56,49 @@ const ViewTests = () => {
 
               {/* Info */}
               <div className="text-sm space-y-2 text-slate-700">
-                <p><span className="font-medium">Company:</span> {test.companyName}</p>
+
+                <p><span className="font-medium">Description:</span> {test.description}</p>
+
+                <p><span className="font-medium">Outcome:</span> {test.outcome}</p>
+
                 <p><span className="font-medium">Type:</span> {test.type}</p>
-                
-                <p><span className="font-medium">No of Tests:</span> {test.no_of_Test}</p>
+
+                <p><span className="font-medium">Service No:</span> {test.serviceNo || "N/A"}</p>
+
+                <p><span className="font-medium">Requirement:</span> {test.requirement}</p>
+
                 <p><span className="font-medium">Price:</span> ₹{test.price}</p>
+
                 <p><span className="font-medium">Discount:</span> {test.discount}%</p>
 
                 <p>
-                  <span className="font-medium">Visibility:</span>{" "}
-                  {test.visibility ? (
-                    <span className="text-emerald-600 font-medium">Visible</span>
-                  ) : (
-                    <span className="text-slate-400">Hidden</span>
-                  )}
+                  <span className="font-medium">Test Duration:</span>{" "}
+                  {test.duration_of_test?.value} {test.duration_of_test?.unit}
                 </p>
+
+                <p>
+                  <span className="font-medium">Result Duration:</span>{" "}
+                  {test.duration_of_result?.value} {test.duration_of_result?.unit}
+                </p>
+
+                <p>
+                  <span className="font-medium">Visit Lab Required:</span>{" "}
+                  {test.visitLab ? "Yes" : "No"}
+                </p>
+
+                {test.caution && (
+                  <p className="text-amber-700">
+                    <span className="font-medium">Caution:</span> {test.caution}
+                  </p>
+                )}
               </div>
 
               {/* Actions */}
-              <div className="grid grid-cols-2 gap-3 pt-4">
+              <div className="grid grid-cols-2 gap-3 pt-4 mt-auto">
 
                 <Button
                   variant="outline"
-                  className="rounded-xl"
+                  className="rounded-xl cursor-pointer"
                   onClick={() => console.log("Edit", test._id)}
                 >
                   Edit
@@ -93,35 +106,18 @@ const ViewTests = () => {
 
                 <Button
                   variant="destructive"
-                  className="rounded-xl"
-                  // onClick={() => deleteProduct(test._id)}
+                  className="rounded-xl cursor-pointer"
+                  onClick={() => deleteTest(test._id)}
                 >
                   Delete
                 </Button>
 
                 <Button
-                  className="rounded-xl"
-                  // onClick={() => toggleVisibility(test._id)}
+                  className="rounded-xl cursor-pointer col-span-2"
+                  onClick={() => changeVisibility(test._id)}
                 >
                   Toggle Visibility
                 </Button>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    className="flex-1 rounded-xl"
-                    // onClick={() => incrementStock(test._id)}
-                  >
-                    + Stock
-                  </Button>
-
-                  <Button
-                    variant="secondary"
-                    className="flex-1 rounded-xl"
-                    // onClick={() => decrementStock(product._id)}
-                  >
-                    − Stock
-                  </Button>
-                </div>
 
               </div>
 

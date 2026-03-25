@@ -3,6 +3,7 @@ import { v2 as cloudinary } from "cloudinary";
 import labModel from "../models/Labs.js";
 import generateToken from "../utils/generateToken.js";
 import labServiceModel from "../models/LabServices.js";
+import { geocodeAddress } from "../utils/geocode.js";
 
 export const signUpLab = async (req, res) => {
   const {
@@ -14,6 +15,7 @@ export const signUpLab = async (req, res) => {
     gstNumber,
     licenseNumber,
     serviceType,
+    ownerName
   } = req.body;
 
   const gst = req.files.gstFile[0];
@@ -29,6 +31,7 @@ export const signUpLab = async (req, res) => {
     gstNumber === "" ||
     licenseNumber === "" ||
     serviceType === "" ||
+    ownerName === ""||
     !gst ||
     !license ||
     !nabl
@@ -54,13 +57,21 @@ export const signUpLab = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
 
+    const coords = await geocodeAddress(address);
+
     const lab = await labModel.create({
       name,
       number,
+      ownerName,
       password: hashPassword,
       email,
       address,
+      location: {
+        type: "Point",
+        coordinates: [coords.lng, coords.lat]
+      },
       licenseNumber,
+      isApproved: true,
       gstNumber,
       serviceType,
       licenseFile: licenseFileUpload.secure_url,
@@ -70,13 +81,13 @@ export const signUpLab = async (req, res) => {
 
     res.json({
       success: true,
-      lab: {
-        _id: lab._id,
-        name: lab.name,
-        email: lab.email,
-        number: lab.number,
-        address: lab.address,
-      },
+      // lab: {
+      //   _id: lab._id,
+      //   name: lab.name,
+      //   email: lab.email,
+      //   number: lab.number,
+      //   address: lab.address,
+      // },
       token: generateToken(lab._id),
     });
   } catch (error) {
@@ -105,6 +116,7 @@ export const loginLab = async (req, res) => {
           address: lab.address,
         },
         token: generateToken(lab._id),
+        role:"lab"
       });
     } else {
       res.json({ success: false, message: "Invalid credentials" });
@@ -174,7 +186,7 @@ export const addService = async (req, res) => {
 
     const fileUpload = await cloudinary.uploader.upload(image.path);
 
-    const service = await labServiceModel.create({
+    const test = await labServiceModel.create({
       name,
       description,
       outcome,
@@ -194,7 +206,7 @@ export const addService = async (req, res) => {
 
     res.json({
       success: true,
-      service,
+      test,
     });
   } catch (error) {
     res.json({ success: false, message: error.message });
@@ -204,10 +216,10 @@ export const addService = async (req, res) => {
 export const getServices = async (req, res) => {
   try {
     const lab = req.lab;
-    const service = await labServiceModel.find({
+    const tests = await labServiceModel.find({
       labId: lab._id,
     });
-    res.json({ success: true, service });
+    res.json({ success: true, tests });
   } catch (error) {
     res.json({
       success: false,
@@ -219,11 +231,11 @@ export const getServices = async (req, res) => {
 export const getService = async (req, res) => {
   try {
     const lab = req.lab;
-    const service = await labServiceModel.findOne({
+    const test = await labServiceModel.findOne({
       _id: req.params.id,
       labId: lab._id,
     });
-    res.json({ success: true, service });
+    res.json({ success: true, test });
   } catch (error) {
     res.json({
       success: false,
@@ -237,7 +249,7 @@ export const updateService = async (req, res) => {};
 export const removeService = async (req, res) => {
   try {
     const user = req.lab;
-    const service = await labServiceModel.findOneAndDelete({
+    const test = await labServiceModel.findOneAndDelete({
       labId: user._id,
       _id: req.params.id,
     });
@@ -251,19 +263,36 @@ export const removeService = async (req, res) => {
 };
 
 export const changeVisibility = async (req, res) => {
-  try {
-    const { visibility } = req.body;
+ try {
     const user = req.lab;
-    const service = await labServiceModel.findOneAndUpdate(
-      { labId: user._id, _id: req.params.id },
-      { visibility },
-    );
+
+    // find test first
+    const test = await labServiceModel.findOne({
+      labId: user._id,
+      _id: req.params.id,
+    });
+
+    if (!test) {
+      return res.json({
+        success: false,
+        message: "Test not found",
+      });
+    }
+
+    // toggle visibility
+    test.visibility = !test.visibility;
+
+    await test.save();
+
     res.json({
       success: true,
-      message: "Service Visibility Changed Successfully",
+      message: "Service visibility toggled successfully",
     });
   } catch (error) {
-    res.json({ success: false, message: error.message });
+    res.json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -271,4 +300,4 @@ export const viewOrders = async (req, res) => {};
 
 export const updateOrderStatus = async (req, res) => {};
 
-export const placeOrder = async (req, res) => {};
+export const createOrder = async (req, res) => {};
