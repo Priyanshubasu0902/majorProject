@@ -9,8 +9,9 @@ import ViewProducts from "./pages/ViewTests";
 import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import Join from "./pages/join";
-import { LabRoute} from "./route/LabRoute";
+import { LabRoute } from "./route/LabRoute";
 import { LabProvider } from "./context/LabContext";
+import CreateOrder from "./pages/CreateOrder";
 
 const App = () => {
   return (
@@ -57,17 +58,25 @@ const App = () => {
                       <Route
                         path="/orders"
                         element={
-                          // <PharmacyRoute>
+                          <LabRoute>
                             <Orders />
-                          // </PharmacyRoute>
+                          </LabRoute>
                         }
                       />
                       <Route
                         path="/profile"
                         element={
-                          // <LabRoute>
+                          <LabRoute>
                             <Profile />
-                          // </LabRoute>
+                          </LabRoute>
+                        }
+                      />
+                      <Route
+                        path="/create-order"
+                        element={
+                          <LabRoute>
+                            <CreateOrder />
+                          </LabRoute>
                         }
                       />
                     </Routes>

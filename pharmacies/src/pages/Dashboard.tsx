@@ -34,6 +34,7 @@ const Dashboard = () => {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
             <DashboardCard title="Total Products" value={products?.length||'0'} />
+            <DashboardCard title="Total Orders" value={counts.total} />
             <DashboardCard title="Active Orders" value={counts.pending} />
             <DashboardCard title="Completed Orders" value={counts.completed} />
             <DashboardCard title="Canceled Orders" value={counts.cancelled} />

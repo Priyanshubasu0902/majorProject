@@ -4,7 +4,13 @@ import {  useLab } from "@/context/LabContext";
 
 const Dashboard = () => {
 
-  const { tests } = useLab();
+  const { tests, orders } = useLab();
+    const counts = {
+    total:     orders.length,
+    completed: orders.filter(o => ["completed", "results_delivered"].includes(o.currentStatus)).length,
+    pending:   orders.filter(o => ["pending", "confirmed", "sample_collected", "processing", "results_ready"].includes(o.currentStatus)).length,
+    cancelled: orders.filter(o => o.currentStatus === "cancelled").length,
+  };
 
   return (
     <>
@@ -25,9 +31,10 @@ const Dashboard = () => {
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
             <DashboardCard title="Total Tests" value={tests.length} />
-            <DashboardCard title="Active Orders" value="6" />
-            <DashboardCard title="Completed Orders" value="128" />
-            <DashboardCard title="Canceled Orders" value="20" />
+            <DashboardCard title="Total Orders" value={counts.total} />
+            <DashboardCard title="Active Orders" value={counts.pending} />
+            <DashboardCard title="Completed Orders" value={counts.completed} />
+            <DashboardCard title="Canceled Orders" value={counts.cancelled}/>
           </div>
 
         </main>

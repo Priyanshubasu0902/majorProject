@@ -1,10 +1,58 @@
 import mongoose from "mongoose";
 
+const itemSchema = new mongoose.Schema(
+ {
+      serviceId: mongoose.Schema.Types.ObjectId, // ref: labServices
+      name: String,
+      type: String, // e.g. "Blood Test", "Urine Test"
+      price: Number,
+      discount: Number, // in %
+      subtotal: Number, // price - (price * discount / 100)
+      requiresLabVisit: Boolean, // copied from labService.visitLab
+      duration_of_test: {
+        value: Number,
+        unit: {
+          type: String,
+          enum: ["hours", "minutes", "seconds"],
+        },
+      },
+      duration_of_result: {
+        value: Number,
+        unit: {
+          type: String,
+          enum: ["hours", "minutes", "seconds"],
+        },
+      },
+      requirement: String, // e.g. "Fasting required for 8 hours"
+      caution: String,
+
+      // ── Per-test Result ────────────────────────────────
+      result: {
+        status: {
+          type: String,
+          enum: [
+            "pending",       // sample not yet collected
+            "collected",     // sample collected, processing
+            "processing",    // in lab
+            "ready",         // result available
+            "delivered",     // result sent to patient
+          ],
+        },
+        reportUrl: String,           // cloudinary PDF URL
+        uploadedAt: Date,
+        // uploadedBy: mongoose.Schema.Types.ObjectId,  // ref: lab staff
+        notes: String,               // lab technician notes
+        referenceRange: String,      // e.g. "Normal: 70–100 mg/dL"
+        isAbnormal: Boolean,         // flag if result is outside normal range
+      },
+    },
+);
+
 const labOrderSchema = mongoose.Schema({
   _id: mongoose.Schema.Types.ObjectId,
 
   // ── Order Identity ──────────────────────────────────────
-  orderNumber: String,           // "LB-2026-00142"
+  orderNumber: String, // "LB-2026-00142"
   createdAt: Date,
   updatedAt: Date,
 
@@ -26,7 +74,7 @@ const labOrderSchema = mongoose.Schema({
 
   // ── Customer / Patient ──────────────────────────────────
   patient: {
-    userId: mongoose.Schema.Types.ObjectId,  // ref: users — null if walk-in
+    userId: mongoose.Schema.Types.ObjectId, // ref: users — null if walk-in
     name: String,
     phone: String,
     email: String,
@@ -40,7 +88,7 @@ const labOrderSchema = mongoose.Schema({
 
   // ── Lab ─────────────────────────────────────────────────
   lab: {
-    labId: mongoose.Schema.Types.ObjectId,   // ref: labs
+    labId: mongoose.Schema.Types.ObjectId, // ref: labs
     name: String,
     address: String,
     phone: String,
@@ -57,74 +105,30 @@ const labOrderSchema = mongoose.Schema({
       pincode: String,
       landmark: String,
     },
-    scheduledAt: Date,          // date + time slot chosen by patient
-    collectedAt: Date,          // actual time sample was collected
-    collectionFee: Number,      // fee charged for home visit
-    collectorName: String,      // phlebotomist name
+    scheduledAt: Date, // date + time slot chosen by patient
+    collectedAt: Date, // actual time sample was collected
+    collectionFee: Number, // fee charged for home visit
+    collectorName: String, // phlebotomist name
     collectorPhone: String,
   },
 
   // ── Lab Visit Details ───────────────────────────────────
   // Populated only if collectionType = "visit_lab"
   labVisit: {
-    scheduledAt: Date,          // appointment slot
-    arrivedAt: Date,            // when patient checked in
-   //  tokenNumber: String,     // "T-042" shown at reception
+    scheduledAt: Date, // appointment slot
+    arrivedAt: Date, // when patient checked in
+    //  tokenNumber: String,     // "T-042" shown at reception
   },
 
   // ── Tests Booked ────────────────────────────────────────
   items: [
-    {
-      serviceId: mongoose.Schema.Types.ObjectId,  // ref: labServices
-      name: String,
-      type: String,                 // e.g. "Blood Test", "Urine Test"
-      price: Number,
-      discount: Number,             // in %
-      subtotal: Number,             // price - (price * discount / 100)
-      requiresLabVisit: Boolean,    // copied from labService.visitLab
-      duration_of_test: {
-        value: Number,
-        unit: {
-          type: String,
-          enum: ["hours", "minutes", "seconds"],
-        },
-      },
-      duration_of_result: {
-        value: Number,
-        unit: {
-          type: String,
-          enum: ["hours", "minutes", "seconds"],
-        },
-      },
-      requirement: String,          // e.g. "Fasting required for 8 hours"
-      caution: String,
-
-      // ── Per-test Result ────────────────────────────────
-      result: {
-        status: {
-          type: String,
-          enum: [
-            "pending",       // sample not yet collected
-            "collected",     // sample collected, processing
-            "processing",    // in lab
-            "ready",         // result available
-            "delivered",     // result sent to patient
-          ],
-        },
-        reportUrl: String,           // cloudinary PDF URL
-        uploadedAt: Date,
-        uploadedBy: mongoose.Schema.Types.ObjectId,  // ref: lab staff
-        notes: String,               // lab technician notes
-        referenceRange: String,      // e.g. "Normal: 70–100 mg/dL"
-        isAbnormal: Boolean,         // flag if result is outside normal range
-      },
-    },
+    itemSchema
   ],
 
   // ── Pricing ─────────────────────────────────────────────
   pricing: {
     itemsTotal: Number,
-    collectionFee: Number,       // 0 if visit_lab
+    collectionFee: Number, // 0 if visit_lab
     packagingFee: Number,
     grandTotal: Number,
   },
@@ -151,13 +155,13 @@ const labOrderSchema = mongoose.Schema({
   currentStatus: {
     type: String,
     enum: [
-      "pending",            // just booked, awaiting confirmation
-      "confirmed",          // lab confirmed the booking
-      "sample_collected",   // phlebotomist collected / patient gave sample at lab
-      "processing",         // tests being run in lab
-      "results_ready",      // all results uploaded
-      "results_delivered",  // reports sent to patient
-      "completed",          // patient acknowledged receipt
+      "pending", // just booked, awaiting confirmation
+      "confirmed", // lab confirmed the booking
+      "sample_collected", // phlebotomist collected / patient gave sample at lab
+      "processing", // tests being run in lab
+      "results_ready", // all results uploaded
+      "results_delivered", // reports sent to patient
+      "completed", // patient acknowledged receipt
       "cancelled",
       "refund_initiated",
       "refunded",
@@ -192,8 +196,8 @@ const labOrderSchema = mongoose.Schema({
       userAction: {
         type: String,
         enum: [
-          "confirmed_receipt",          // patient confirmed getting reports
-          "reported_not_received",      // patient says reports not received
+          "confirmed_receipt", // patient confirmed getting reports
+          "reported_not_received", // patient says reports not received
           "requested_cancellation",
           "confirmed_cancellation_refund",
         ],
@@ -231,9 +235,9 @@ const labOrderSchema = mongoose.Schema({
           "other",
         ],
       },
-      reasonNote: String,          // free text if reason = "other"
+      reasonNote: String, // free text if reason = "other"
       refundEligible: Boolean,
-      refundAmount: Number,        // may be partial if sample already collected
+      refundAmount: Number, // may be partial if sample already collected
     },
     pharmacyResponse: {
       respondedAt: Date,
@@ -246,7 +250,7 @@ const labOrderSchema = mongoose.Schema({
   // ── Report Delivery ─────────────────────────────────────
   // Consolidated report across all tests in this order
   consolidatedReport: {
-    reportUrl: String,             // single merged PDF of all test results
+    reportUrl: String, // single merged PDF of all test results
     generatedAt: Date,
     deliveredVia: {
       type: String,
@@ -257,12 +261,13 @@ const labOrderSchema = mongoose.Schema({
 
   // ── Notes ───────────────────────────────────────────────
   notes: {
-    fromPatient: String,           // e.g. "I have a latex allergy"
-    fromReceptionist: String,      // internal note
-    fromTechnician: String,        // lab technician observations
+    fromPatient: String, // e.g. "I have a latex allergy"
+    fromReceptionist: String, // internal note
+    fromTechnician: String, // lab technician observations
   },
 });
 
-const labOrder = mongoose.model("labOrder", labOrderSchema);
+const labOrder =
+  mongoose.models.labOrder || mongoose.model("labOrder", labOrderSchema);
 
 export default labOrder;

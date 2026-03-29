@@ -1,4 +1,4 @@
-// src/routes/PharmacyRoute.tsx
+// src/routes/LabRoute.tsx
 import { Navigate } from "react-router-dom";
 import { useLab } from "@/context/LabContext";
 import type { JSX } from "react";

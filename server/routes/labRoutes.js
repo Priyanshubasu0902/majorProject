@@ -1,5 +1,6 @@
+//server/routes/labRoutes.js
 import express from "express";
-import { addService, changeVisibility, createOrder, deleteLab, editLab, getLab, getService, getServices, loginLab, removeService, setPassword, signUpLab, viewOrders } from "../controllers/labController.js";
+import { addService, changeVisibility, createOrder, deleteLab, editLab, getLab, getService, getServices, loginLab, removeService, sendReport, setPassword, signUpLab, updateOrderStatus, uploadReport, viewOrders } from "../controllers/labController.js";
 import { isLabLoggedIn } from "../middlewares/isLoggedIn.js";
 import upload from "../config/multer.js";
 
@@ -45,5 +46,9 @@ router.get('/changeTestVisibility/:id', isLabLoggedIn, changeVisibility);
 router.post('/createOrder', isLabLoggedIn, createOrder);
 
 router.get('/orders', isLabLoggedIn, viewOrders);
+
+router.post('/orders/:orderId/status', isLabLoggedIn, updateOrderStatus);
+router.post('/orders/:orderId/report', isLabLoggedIn, upload.single("report"), uploadReport);
+router.post('/orders/:orderId/send-report', isLabLoggedIn, sendReport);
 
 export default router;
