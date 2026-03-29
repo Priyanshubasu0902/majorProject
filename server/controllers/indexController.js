@@ -39,6 +39,7 @@ export const generateOtp = async (req, res) => {
     res.json({ success: true, message: "OTP sent to your email" });
   } catch (error) {
     res.json({ success: false, message: error.message });
+    console.log(error.message);
   }
 };
 
