@@ -1,3 +1,4 @@
+//server/controllers/pharmacyController.js
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
 import pharmacyModel from "../models/Pharmacies.js";
@@ -34,8 +35,7 @@ export const signUpPharmacy = async (req, res) => {
     gstNumber === "" ||
     licenseNumber === "" ||
     !gst ||
-    !license ||
-    !nabl
+    !license
   ) {
     return res.json({ success: false, message: "Missing Details" });
   }
@@ -560,8 +560,6 @@ export const createOrder = async (req, res) => {
   }
 };
 
-export const updateOrderStatus = async (req, res) => {};
-
 export const viewOrders = async (req, res) => {
   const user = req.pharmacy;
 
@@ -580,3 +578,6 @@ export const viewOrders = async (req, res) => {
     })
   }
 };
+
+export const updateOrderStatus = async (req, res) => {};
+

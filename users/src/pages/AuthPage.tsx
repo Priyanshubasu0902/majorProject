@@ -1,41 +1,67 @@
+//majorProject/users/src/pages/AuthPage.tsx
+import React from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye, EyeOff, Phone, Mail, User, Calendar,
   Heart, Camera, ArrowRight, ArrowLeft, CheckCircle2,
-  Loader2, Shield
+  Loader2, Shield, AlertCircle
 } from "lucide-react";
 
-type AuthMode = "login" | "signup";
-type SignupStep = "basic" | "otp" | "profile";
+type AuthMode    = "login" | "signup";
+type SignupStep  = "basic" | "otp" | "profile";
 type LoginMethod = "email" | "phone";
 
 const MEDICAL_CONDITIONS = [
   "Diabetes", "Hypertension", "Asthma", "Heart Disease",
-  "Thyroid", "Arthritis", "None"
+  "Thyroid", "Arthritis", "None",
 ];
 
+// ── Change this to your actual backend URL ─────────────────────────────────
+const API = import.meta.env.VITE_BACKEND_URL;
+
+// ── Tiny helper so every fetch gets the auth token automatically ───────────
+async function apiFetch(path: string, body: object) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API}${path}`, {
+    method : "POST",
+    headers: {
+      "Content-Type" : "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// Main Component 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AuthMode>("login");
-  const [loginMethod, setLoginMethod] = useState<LoginMethod>("email");
-  const [signupStep, setSignupStep] = useState<SignupStep>("basic");
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
 
-  const [loginForm, setLoginForm] = useState({ identifier: "", password: "" });
-  const [basicForm, setBasicForm] = useState({ fullName: "", mobile: "", email: "", password: "" });
+  const [mode,        setMode       ] = useState<AuthMode>("login");
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>("email");
+  const [signupStep,  setSignupStep ] = useState<SignupStep>("basic");
+  const [showPass,    setShowPass   ] = useState(false);
+  const [loading,     setLoading    ] = useState(false);
+  const [error,       setError      ] = useState("");
+  const [otp,         setOtp        ] = useState(["", "", "", "", "", ""]);
+
+  const [loginForm,   setLoginForm  ] = useState({ identifier: "", password: "" });
+  const [basicForm,   setBasicForm  ] = useState({
+    fullName: "", mobile: "", email: "", password: "",
+  });
   const [profileForm, setProfileForm] = useState({
-    age: "", gender: "", conditions: [] as string[], avatar: null as string | null
+    age: "", gender: "", conditions: [] as string[], avatar: null as string | null,
   });
 
+  // ── OTP input helpers 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+    const next = [...otp];
+    next[index] = value;
+    setOtp(next);
     if (value && index < 5) document.getElementById(`otp-${index + 1}`)?.focus();
   };
 
@@ -48,32 +74,168 @@ export default function AuthPage() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => setProfileForm(p => ({ ...p, avatar: reader.result as string }));
+      reader.onload = () =>
+        setProfileForm(p => ({ ...p, avatar: reader.result as string }));
       reader.readAsDataURL(file);
     }
   };
 
   const toggleCondition = (c: string) => {
-    if (c === "None") { setProfileForm(p => ({ ...p, conditions: ["None"] })); return; }
+    if (c === "None") {
+      setProfileForm(p => ({ ...p, conditions: ["None"] }));
+      return;
+    }
     setProfileForm(p => ({
       ...p,
       conditions: p.conditions.includes(c)
         ? p.conditions.filter(x => x !== c)
-        : [...p.conditions.filter(x => x !== "None"), c]
+        : [...p.conditions.filter(x => x !== "None"), c],
     }));
   };
 
-  const fake = async (ms = 1000) => { setLoading(true); await new Promise(r => setTimeout(r, ms)); setLoading(false); };
+  // ── Auth handlers ────────────────────────────────────────────────────────
 
-  const inputCls = "w-full py-3.5 rounded-2xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition placeholder:text-slate-400";
-  const btnCls = "w-full bg-slate-900 text-white py-3.5 rounded-2xl font-medium text-sm hover:bg-slate-800 active:scale-[0.99] transition flex items-center justify-center gap-2 disabled:opacity-60";
+  /** Step: Login */
+  const handleLogin = async () => {
+    setError("");
+    if (!loginForm.identifier || !loginForm.password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload =
+        loginMethod === "email"
+          ? { email: loginForm.identifier, password: loginForm.password }
+          : { number: loginForm.identifier, password: loginForm.password };
 
-  const slideV = {
-    enter: (d: number) => ({ x: d * 50, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (d: number) => ({ x: d * -50, opacity: 0 })
+      const data = await apiFetch("/api/user/login", payload);
+
+      if (!data.success) { setError(data.message); return; }
+
+      localStorage.setItem("token", data.token);
+      // If you have a UserContext, set the user here e.g. setUser(data.user)
+      navigate("/home");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  /** Step 1 → 2: Send OTP */
+  const handleSendOtp = async () => {
+    setError("");
+    if (!basicForm.fullName || !basicForm.mobile || !basicForm.email || !basicForm.password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/generate-otp", { email: basicForm.email });
+      if (!data.success) { setError(data.message); return; }
+      setSignupStep("otp");
+    } catch {
+      setError("Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Step 2 → 3: Verify OTP */
+  const handleVerifyOtp = async () => {
+    setError("");
+    const otpStr = otp.join("");
+    if (otpStr.length < 6) { setError("Please enter the complete 6-digit OTP."); return; }
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/verify-otp", {
+        email: basicForm.email,
+        otp  : otpStr,
+      });
+      if (!data.success) { setError(data.message); return; }
+      setSignupStep("profile");
+    } catch {
+      setError("OTP verification failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Step 3: Complete signup */
+  const handleCompleteSignup = async () => {
+    setError("");
+    if (!profileForm.age || !profileForm.gender) {
+      setError("Please fill in your age and gender.");
+      return;
+    }
+    setLoading(true);
+    try {
+      // Build multipart/form-data so the avatar image is sent to Cloudinary
+      const formData = new FormData();
+      formData.append("name",     basicForm.fullName);
+      formData.append("email",    basicForm.email);
+      formData.append("number",   basicForm.mobile);
+      formData.append("password", basicForm.password);
+      formData.append("age",      profileForm.age);
+      formData.append("gender",   profileForm.gender);
+      // if (profileForm.conditions.length)
+      //   formData.append("conditions", JSON.stringify(profileForm.conditions));
+
+      // If an avatar was picked, convert the base64 back to a File blob
+      if (profileForm.avatar) {
+        const blob = await (await fetch(profileForm.avatar)).blob();
+        formData.append("profileImage", blob, "avatar.jpg");
+      }
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/api/user/signUp`, {
+        method : "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body   : formData,
+      });
+      const data = await res.json();
+
+      if (!data.success) { setError(data.message); return; }
+
+      localStorage.setItem("token", data.token);
+      // If you have a UserContext, set the user here e.g. setUser(data.user)
+      navigate("/home");
+    } catch {
+      setError("Sign-up failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Resend OTP */
+  const handleResendOtp = async () => {
+    setError("");
+    try {
+      const data = await apiFetch("/api/generate-otp", { email: basicForm.email });
+      if (!data.success) setError(data.message);
+    } catch {
+      setError("Failed to resend OTP.");
+    }
+  };
+
+  // ── Shared styles ────────────────────────────────────────────────────────
+  const inputCls =
+    "w-full py-3.5 rounded-2xl border border-slate-200 bg-slate-50 text-sm " +
+    "focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 " +
+    "transition placeholder:text-slate-400";
+  const btnCls =
+    "w-full bg-slate-900 text-white py-3.5 rounded-2xl font-medium text-sm " +
+    "hover:bg-slate-800 active:scale-[0.99] transition flex items-center justify-center " +
+    "gap-2 disabled:opacity-60";
+
+  const slideV = {
+    enter : (d: number) => ({ x: d * 50, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit  : (d: number) => ({ x: d * -50, opacity: 0 }),
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/20 to-slate-100 flex items-center justify-center p-4">
       {/* Decorative blobs */}
@@ -103,7 +265,12 @@ export default function AuthPage() {
             {(["login", "signup"] as AuthMode[]).map(m => (
               <button
                 key={m}
-                onClick={() => { setMode(m); setSignupStep("basic"); setOtp(["","","","","",""]); }}
+                onClick={() => {
+                  setMode(m);
+                  setSignupStep("basic");
+                  setOtp(["", "", "", "", "", ""]);
+                  setError("");
+                }}
                 className={`flex-1 py-4 text-sm font-medium capitalize transition-all ${
                   mode === m
                     ? "text-emerald-600 border-b-2 border-emerald-600 -mb-px bg-emerald-50/40"
@@ -116,18 +283,45 @@ export default function AuthPage() {
           </div>
 
           <div className="p-7">
+            {/* Error banner */}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  key="err"
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="flex items-start gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-2xl px-4 py-3 mb-5"
+                >
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <AnimatePresence mode="wait" custom={1}>
 
-              {/* ── LOGIN ── */}
+              {/* ── LOGIN ──────────────────────────────────────────────── */}
               {mode === "login" && (
-                <motion.div key="login" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
+                <motion.div
+                  key="login"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.22 }}
+                >
                   <h2 className="text-xl font-semibold text-slate-800 mb-0.5">Welcome back</h2>
                   <p className="text-sm text-slate-400 mb-6">Sign in to continue your care journey</p>
 
                   <div className="flex bg-slate-100 rounded-2xl p-1 mb-5">
                     {(["email", "phone"] as LoginMethod[]).map(m => (
-                      <button key={m} onClick={() => setLoginMethod(m)}
-                        className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${loginMethod === m ? "bg-white shadow text-slate-800" : "text-slate-500"}`}>
+                      <button
+                        key={m}
+                        onClick={() => { setLoginMethod(m); setError(""); }}
+                        className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                          loginMethod === m ? "bg-white shadow text-slate-800" : "text-slate-500"
+                        }`}
+                      >
                         {m === "email" ? "📧 Email" : "📱 Phone"}
                       </button>
                     ))}
@@ -138,38 +332,60 @@ export default function AuthPage() {
                       <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                         {loginMethod === "email" ? <Mail size={15} /> : <Phone size={15} />}
                       </div>
-                      <input type={loginMethod === "email" ? "email" : "tel"}
+                      <input
+                        type={loginMethod === "email" ? "email" : "tel"}
                         placeholder={loginMethod === "email" ? "Email address" : "Mobile number"}
                         value={loginForm.identifier}
                         onChange={e => setLoginForm(p => ({ ...p, identifier: e.target.value }))}
-                        className={`${inputCls} pl-10 pr-4`} />
+                        onKeyDown={e => e.key === "Enter" && handleLogin()}
+                        className={`${inputCls} pl-10 pr-4`}
+                      />
                     </div>
 
                     <div className="relative">
                       <Shield size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      <input type={showPass ? "text" : "password"} placeholder="Password"
+                      <input
+                        type={showPass ? "text" : "password"}
+                        placeholder="Password"
                         value={loginForm.password}
                         onChange={e => setLoginForm(p => ({ ...p, password: e.target.value }))}
-                        className={`${inputCls} pl-10 pr-10`} />
-                      <button onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        onKeyDown={e => e.key === "Enter" && handleLogin()}
+                        className={`${inputCls} pl-10 pr-10`}
+                      />
+                      <button
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
                         {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
 
                     <div className="text-right -mt-1">
-                      <button className="text-xs text-emerald-600 hover:underline">Forgot password?</button>
+                      <button className="text-xs text-emerald-600 hover:underline">
+                        Forgot password?
+                      </button>
                     </div>
 
-                    <button onClick={async () => { await fake(); navigate("/home"); }} disabled={loading} className={btnCls}>
-                      {loading ? <Loader2 size={15} className="animate-spin" /> : <>Sign In <ArrowRight size={15} /></>}
+                    <button onClick={handleLogin} disabled={loading} className={btnCls}>
+                      {loading
+                        ? <Loader2 size={15} className="animate-spin" />
+                        : <>Sign In <ArrowRight size={15} /></>}
                     </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* ── SIGNUP STEP 1 ── */}
+              {/* ── SIGNUP STEP 1: Basic info ──────────────────────────── */}
               {mode === "signup" && signupStep === "basic" && (
-                <motion.div key="s1" custom={1} variants={slideV} initial="enter" animate="center" exit="exit" transition={{ duration: 0.28 }}>
+                <motion.div
+                  key="s1"
+                  custom={1}
+                  variants={slideV}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.28 }}
+                >
                   <div className="flex items-center gap-2 mb-0.5">
                     <h2 className="text-xl font-semibold text-slate-800">Create account</h2>
                     <StepBadge current={1} total={3} />
@@ -178,72 +394,124 @@ export default function AuthPage() {
 
                   <div className="space-y-3.5">
                     {[
-                      { icon: <User size={15}/>, placeholder: "Full name", type: "text", key: "fullName" },
-                      { icon: <Phone size={15}/>, placeholder: "Mobile number", type: "tel", key: "mobile" },
-                      { icon: <Mail size={15}/>, placeholder: "Email address", type: "email", key: "email" },
+                      { icon: <User size={15} />, placeholder: "Full name",      type: "text",  key: "fullName" },
+                      { icon: <Phone size={15}/>, placeholder: "Mobile number",  type: "tel",   key: "mobile"   },
+                      { icon: <Mail size={15} />, placeholder: "Email address",  type: "email", key: "email"    },
                     ].map(f => (
                       <div key={f.key} className="relative">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">{f.icon}</div>
-                        <input type={f.type} placeholder={f.placeholder}
-                          value={(basicForm as any)[f.key]}
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                          {f.icon}
+                        </div>
+                        <input
+                          type={f.type}
+                          placeholder={f.placeholder}
+                          value={(basicForm as Record<string, string>)[f.key]}
                           onChange={e => setBasicForm(p => ({ ...p, [f.key]: e.target.value }))}
-                          className={`${inputCls} pl-10 pr-4`} />
+                          className={`${inputCls} pl-10 pr-4`}
+                        />
                       </div>
                     ))}
 
                     <div className="relative">
                       <Shield size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      <input type={showPass ? "text" : "password"} placeholder="Create password"
+                      <input
+                        type={showPass ? "text" : "password"}
+                        placeholder="Create password"
                         value={basicForm.password}
                         onChange={e => setBasicForm(p => ({ ...p, password: e.target.value }))}
-                        className={`${inputCls} pl-10 pr-10`} />
-                      <button onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        className={`${inputCls} pl-10 pr-10`}
+                      />
+                      <button
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
                         {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
 
-                    <button onClick={async () => { await fake(800); setSignupStep("otp"); }} disabled={loading} className={btnCls}>
-                      {loading ? <Loader2 size={15} className="animate-spin" /> : <>Send OTP <ArrowRight size={15} /></>}
+                    <button onClick={handleSendOtp} disabled={loading} className={btnCls}>
+                      {loading
+                        ? <Loader2 size={15} className="animate-spin" />
+                        : <>Send OTP <ArrowRight size={15} /></>}
                     </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* ── SIGNUP STEP 2: OTP ── */}
+              {/* ── SIGNUP STEP 2: OTP verification ───────────────────── */}
               {mode === "signup" && signupStep === "otp" && (
-                <motion.div key="s2" custom={1} variants={slideV} initial="enter" animate="center" exit="exit" transition={{ duration: 0.28 }}>
+                <motion.div
+                  key="s2"
+                  custom={1}
+                  variants={slideV}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.28 }}
+                >
                   <div className="flex items-center gap-2 mb-0.5">
                     <h2 className="text-xl font-semibold text-slate-800">Verify email</h2>
                     <StepBadge current={2} total={3} />
                   </div>
                   <p className="text-sm text-slate-400 mb-1">We sent a 6-digit code to</p>
-                  <p className="text-sm font-semibold text-slate-700 mb-8">{basicForm.email || "your email"}</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-8">
+                    {basicForm.email || "your email"}
+                  </p>
 
                   <div className="flex gap-2 justify-center mb-8">
                     {otp.map((digit, i) => (
-                      <input key={i} id={`otp-${i}`} type="text" inputMode="numeric" maxLength={1}
-                        value={digit} onChange={e => handleOtpChange(i, e.target.value)} onKeyDown={e => handleOtpKey(i, e)}
-className="w-10 h-10 text-center text-base font-bold rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"                      />
+                      <input
+                        key={i}
+                        id={`otp-${i}`}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={e => handleOtpChange(i, e.target.value)}
+                        onKeyDown={e => handleOtpKey(i, e)}
+                        className="w-10 h-10 text-center text-base font-bold rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"
+                      />
                     ))}
                   </div>
 
-                  <button onClick={async () => { await fake(800); setSignupStep("profile"); }}
-                    disabled={loading || otp.some(d => !d)} className={btnCls}>
-                    {loading ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> Verify & Continue</>}
+                  <button
+                    onClick={handleVerifyOtp}
+                    disabled={loading || otp.some(d => !d)}
+                    className={btnCls}
+                  >
+                    {loading
+                      ? <Loader2 size={15} className="animate-spin" />
+                      : <><CheckCircle2 size={15} /> Verify &amp; Continue</>}
                   </button>
 
                   <div className="flex justify-between mt-4">
-                    <button onClick={() => setSignupStep("basic")} className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                    <button
+                      onClick={() => { setSignupStep("basic"); setError(""); }}
+                      className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                    >
                       <ArrowLeft size={11} /> Back
                     </button>
-                    <button className="text-xs text-emerald-600 hover:underline">Resend OTP</button>
+                    <button
+                      onClick={handleResendOtp}
+                      className="text-xs text-emerald-600 hover:underline"
+                    >
+                      Resend OTP
+                    </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* ── SIGNUP STEP 3: PROFILE ── */}
+              {/* ── SIGNUP STEP 3: Health profile ─────────────────────── */}
               {mode === "signup" && signupStep === "profile" && (
-                <motion.div key="s3" custom={1} variants={slideV} initial="enter" animate="center" exit="exit" transition={{ duration: 0.28 }}>
+                <motion.div
+                  key="s3"
+                  custom={1}
+                  variants={slideV}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.28 }}
+                >
                   <div className="flex items-center gap-2 mb-0.5">
                     <h2 className="text-xl font-semibold text-slate-800">Health profile</h2>
                     <StepBadge current={3} total={3} />
@@ -269,44 +537,66 @@ className="w-10 h-10 text-center text-base font-bold rounded-xl border border-sl
                     <div className="grid grid-cols-2 gap-3">
                       <div className="relative">
                         <Calendar size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <input type="number" placeholder="Age"
+                        <input
+                          type="number"
+                          placeholder="Age"
                           value={profileForm.age}
                           onChange={e => setProfileForm(p => ({ ...p, age: e.target.value }))}
-                          className={`${inputCls} pl-10 pr-4`} />
+                          className={`${inputCls} pl-10 pr-4`}
+                        />
                       </div>
-                      <select value={profileForm.gender}
+                      <select
+                        value={profileForm.gender}
                         onChange={e => setProfileForm(p => ({ ...p, gender: e.target.value }))}
-                        className={`${inputCls} px-4 text-slate-600`}>
+                        className={`${inputCls} px-4 text-slate-600`}
+                      >
                         <option value="">Gender</option>
-                        <option>Male</option><option>Female</option>
-                        <option>Other</option><option>Prefer not to say</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                        <option>Prefer not to say</option>
                       </select>
                     </div>
 
                     <div>
                       <div className="flex items-center gap-1.5 mb-2.5">
                         <Heart size={13} className="text-rose-400" />
-                        <p className="text-xs font-medium text-slate-500">Medical conditions (optional)</p>
+                        <p className="text-xs font-medium text-slate-500">
+                          Medical conditions (optional)
+                        </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {MEDICAL_CONDITIONS.map(c => (
-                          <button key={c} onClick={() => toggleCondition(c)}
+                          <button
+                            key={c}
+                            onClick={() => toggleCondition(c)}
                             className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
                               profileForm.conditions.includes(c)
                                 ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                                 : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-600"
-                            }`}>{c}</button>
+                            }`}
+                          >
+                            {c}
+                          </button>
                         ))}
                       </div>
                     </div>
 
-                    <button onClick={async () => { await fake(); navigate("/home"); }} disabled={loading}
-                      className="w-full bg-emerald-600 text-white py-3.5 rounded-2xl font-medium text-sm hover:bg-emerald-700 active:scale-[0.99] transition flex items-center justify-center gap-2 disabled:opacity-60">
-                      {loading ? <Loader2 size={15} className="animate-spin" /> : <><CheckCircle2 size={15} /> Complete Setup</>}
+                    <button
+                      onClick={handleCompleteSignup}
+                      disabled={loading}
+                      className="w-full bg-emerald-600 text-white py-3.5 rounded-2xl font-medium text-sm hover:bg-emerald-700 active:scale-[0.99] transition flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                      {loading
+                        ? <Loader2 size={15} className="animate-spin" />
+                        : <><CheckCircle2 size={15} /> Complete Setup</>}
                     </button>
                   </div>
 
-                  <button onClick={() => setSignupStep("otp")} className="mt-4 text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1">
+                  <button
+                    onClick={() => { setSignupStep("otp"); setError(""); }}
+                    className="mt-4 text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                  >
                     <ArrowLeft size={11} /> Back
                   </button>
                 </motion.div>
@@ -325,6 +615,7 @@ className="w-10 h-10 text-center text-base font-bold rounded-xl border border-sl
   );
 }
 
+// ── Step badge ─────────────────────────────────────────────────────────────
 function StepBadge({ current, total }: { current: number; total: number }) {
   return (
     <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">

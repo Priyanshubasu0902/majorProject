@@ -1,3 +1,4 @@
+//majorProject/users/src/pages/HomePage.tsx
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Clock, Star, TrendingUp } from "lucide-react";

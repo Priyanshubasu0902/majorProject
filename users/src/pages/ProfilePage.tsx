@@ -1,3 +1,4 @@
+//majorProject/users/src/pages/ProfilePage.tsx
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Mail, Phone, Calendar, User, MapPin, Heart, Edit2, Check, X } from "lucide-react";
